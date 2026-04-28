@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Syllabus to Coursera Recommender</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f5f7fb;
+        color: #111827;
+      }
+      .container {
+        max-width: 1080px;
+        margin: 2rem auto 4rem;
+        padding: 0 1rem;
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.9rem;
+      }
+      .subtitle {
+        margin: 0 0 1.5rem;
+        color: #4b5563;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 1rem;
+        box-shadow: 0 8px 24px rgba(2, 6, 23, 0.05);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+      .grid .full {
+        grid-column: 1 / -1;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.95rem;
+      }
+      input[type="file"] {
+        padding: 0.5rem;
+      }
+      button {
+        border: 0;
+        background: #1d4ed8;
+        color: #fff;
+        border-radius: 10px;
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+      .status {
+        margin-top: 0.9rem;
+        color: #1f2937;
+        font-size: 0.95rem;
+      }
+      .results {
+        margin-top: 1.5rem;
+        display: grid;
+        gap: 1rem;
+      }
+      .result-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 1rem;
+      }
+      .result-title {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+      .meta {
+        color: #6b7280;
+        margin: 0.2rem 0 0.75rem;
+        font-size: 0.9rem;
+      }
+      .score-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.7rem;
+      }
+      .chip {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.82rem;
+      }
+      .parsed {
+        margin-top: 1.2rem;
+        background: #ffffff;
+        border: 1px dashed #cbd5e1;
+        border-radius: 14px;
+        padding: 1rem;
+      }
+      .parsed h3 {
+        margin-top: 0;
+        margin-bottom: 0.45rem;
+      }
+      ul {
+        margin: 0.35rem 0 0.8rem;
+        padding-left: 1.1rem;
+      }
+      .small {
+        font-size: 0.88rem;
+        color: #4b5563;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .score-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Syllabus to Coursera Recommender</h1>
+      <p class="subtitle">
+        Upload a syllabus and receive top active Coursera course recommendations ranked by description, learning outcomes, and weekly topics alignment.
+      </p>
+
+      <form id="upload-form" class="panel">
+        <div class="grid">
+          <div>
+            <label for="faculty_name">Faculty Name</label>
+            <input id="faculty_name" name="faculty_name" required placeholder="e.g., Dr. Jane Smith" />
+          </div>
+          <div>
+            <label for="department">Department</label>
+            <input id="department" name="department" required placeholder="e.g., Information Systems" />
+          </div>
+          <div class="full">
+            <label for="title">Course Title</label>
+            <input id="title" name="title" required placeholder="e.g., Business Data Analytics" />
+          </div>
+          <div class="full">
+            <label for="file">Syllabus File (PDF, DOCX, or TXT)</label>
+            <input id="file" name="file" type="file" accept=".pdf,.docx,.txt,.md" required />
+          </div>
+        </div>
+        <button id="submit-btn" type="submit">Upload and Recommend</button>
+        <div id="status" class="status" role="status"></div>
+      </form>
+
+      <section id="parsed" class="parsed" hidden></section>
+      <section id="results" class="results"></section>
+    </div>
+
+    <script>
+      const form = document.getElementById("upload-form");
+      const statusEl = document.getElementById("status");
+      const resultsEl = document.getElementById("results");
+      const parsedEl = document.getElementById("parsed");
+      const submitBtn = document.getElementById("submit-btn");
+
+      function formatScore(value) {
+        return `${(value * 100).toFixed(1)}%`;
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderParsed(parsed) {
+        parsedEl.hidden = false;
+        parsedEl.innerHTML = `
+          <h3>Parsed Syllabus Sections</h3>
+          <p class="small"><strong>Description:</strong> ${escapeHtml(parsed.description || "Not detected")}</p>
+          <p class="small"><strong>Learning Outcomes:</strong></p>
+          <ul>${(parsed.learning_outcomes || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("") || "<li>Not detected</li>"}</ul>
+          <p class="small"><strong>Weekly Topics:</strong></p>
+          <ul>${(parsed.weekly_topics || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("") || "<li>Not detected</li>"}</ul>
+        `;
+      }
+
+      function renderRecommendations(payload) {
+        resultsEl.innerHTML = "";
+        if (!payload.recommendations.length) {
+          resultsEl.innerHTML = `<div class="result-card">No active courses found.</div>`;
+          return;
+        }
+
+        payload.recommendations.forEach((rec) => {
+          const card = document.createElement("article");
+          card.className = "result-card";
+          card.innerHTML = `
+            <h3 class="result-title">#${rec.rank} ${escapeHtml(rec.title)}</h3>
+            <p class="meta">${escapeHtml(rec.partner_name)} · ${escapeHtml(rec.provider)} · ${escapeHtml(rec.level)}</p>
+            <div class="score-grid">
+              <div class="chip"><strong>Overall:</strong> ${formatScore(rec.overall_score)}</div>
+              <div class="chip"><strong>Description:</strong> ${formatScore(rec.description_score)}</div>
+              <div class="chip"><strong>CLOs:</strong> ${formatScore(rec.learning_outcome_score)}</div>
+              <div class="chip"><strong>Weekly:</strong> ${formatScore(rec.weekly_topic_score)}</div>
+            </div>
+            <p class="small">${escapeHtml(rec.explanation)}</p>
+            <p class="small"><a href="${escapeHtml(rec.url)}" target="_blank" rel="noopener noreferrer">View Course</a></p>
+          `;
+          resultsEl.appendChild(card);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resultsEl.innerHTML = "";
+        parsedEl.hidden = true;
+        statusEl.textContent = "Uploading syllabus and parsing sections...";
+        submitBtn.disabled = true;
+
+        try {
+          const formData = new FormData(form);
+          const uploadResp = await fetch("/api/syllabi/upload", {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadResp.ok) {
+            throw new Error(`Upload failed (${uploadResp.status})`);
+          }
+
+          const uploadData = await uploadResp.json();
+          renderParsed(uploadData.parsed);
+          statusEl.textContent = "Generating top recommendations...";
+
+          const recResp = await fetch(`/api/recommendations/${uploadData.syllabus_id}?top_n=5`, {
+            method: "POST",
+          });
+          if (!recResp.ok) {
+            throw new Error(`Recommendation failed (${recResp.status})`);
+          }
+
+          const recData = await recResp.json();
+          renderRecommendations(recData);
+          statusEl.textContent = "Done. Top 5 recommendations generated.";
+        } catch (error) {
+          statusEl.textContent = `Error: ${error.message}`;
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

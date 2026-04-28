@@ -288,6 +288,31 @@
         user: null,
       };
 
+      function validateAuthInput(isRegister) {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const fullName = fullNameInput.value.trim();
+        const department = departmentInput.value.trim();
+
+        if (!email) {
+          throw new Error("Email is required.");
+        }
+        if (!password) {
+          throw new Error("Password is required.");
+        }
+        if (isRegister) {
+          if (!fullName) {
+            throw new Error("Full name is required for registration.");
+          }
+          if (!department) {
+            throw new Error("Department is required for registration.");
+          }
+          if (password.length < 8) {
+            throw new Error("Password must be at least 8 characters.");
+          }
+        }
+      }
+
       function escapeHtml(text) {
         return String(text || "")
           .replaceAll("&", "&amp;")
@@ -381,6 +406,7 @@
       async function handleRegister() {
         registerBtn.disabled = true;
         try {
+          validateAuthInput(true);
           const makeAdmin = await shouldSuggestBootstrap();
           const payload = {
             email: emailInput.value.trim(),
@@ -408,6 +434,7 @@
       async function handleLogin() {
         loginBtn.disabled = true;
         try {
+          validateAuthInput(false);
           const payload = {
             email: emailInput.value.trim(),
             password: passwordInput.value,

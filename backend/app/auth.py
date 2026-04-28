@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -13,7 +14,7 @@ from .database import get_db
 from .models import User
 
 
-# pbkdf2_sha256 avoids external bcrypt backend compatibility issues.
+# pbkdf2_sha256 is the default for new passwords.
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -23,7 +24,23 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    if not hashed_password:
+        return False
+
+    # Backward compatibility for legacy bcrypt hashes created by earlier builds.
+    if hashed_password.startswith(("$2a$", "$2b$", "$2y$")):
+        try:
+            return bcrypt.checkpw(
+                plain_password.encode("utf-8"),
+                hashed_password.encode("utf-8"),
+            )
+        except ValueError:
+            return False
+
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def create_access_token(subject: str) -> str:

@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
 from .auth import create_access_token, get_current_user, hash_password, verify_password
@@ -64,11 +64,33 @@ app.add_middleware(
 
 def initialize_database() -> None:
     ensure_vector_extension()
+    if _sqlite_schema_outdated():
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     create_vector_indexes()
     with Session(engine) as session:
         ensure_bootstrap_admin(session)
         seed_courses_if_empty(session)
+
+
+def _sqlite_schema_outdated() -> bool:
+    if engine.dialect.name != "sqlite":
+        return False
+
+    inspector = inspect(engine)
+    if "courses" not in inspector.get_table_names():
+        return False
+
+    required_columns = {
+        "provider",
+        "provider_course_id",
+        "language_code",
+        "description_embedding",
+        "outcomes_embedding",
+        "weekly_topics_embedding",
+    }
+    existing_columns = {column["name"] for column in inspector.get_columns("courses")}
+    return not required_columns.issubset(existing_columns)
 
 
 @app.on_event("startup")

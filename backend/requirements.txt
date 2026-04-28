@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+python-multipart
+python-docx
+pypdf
+httpx
+pgvector
+psycopg[binary]
+python-jose[cryptography]
+passlib[bcrypt]
+email-validator
+openai

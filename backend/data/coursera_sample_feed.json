@@ -1,0 +1,43 @@
+{
+  "courses": [
+    {
+      "provider": "coursera",
+      "provider_course_id": "deeplearning-ai-machine-learning-specialization",
+      "title": "Machine Learning Specialization",
+      "partner_name": "DeepLearning.AI and Stanford",
+      "level": "Beginner",
+      "language_code": "en",
+      "url": "https://www.coursera.org/specializations/machine-learning-introduction",
+      "is_active": true,
+      "description_text": "Build machine learning models using supervised and unsupervised techniques with practical labs.",
+      "outcomes_text": "Apply regression and classification algorithms. Evaluate model performance. Build neural networks for core predictive tasks.",
+      "weekly_topics_text": "Week 1: Supervised learning. Week 2: Regression and classification. Week 3: Neural networks basics. Week 4: Unsupervised learning."
+    },
+    {
+      "provider": "coursera",
+      "provider_course_id": "google-cybersecurity-professional-certificate",
+      "title": "Google Cybersecurity Professional Certificate",
+      "partner_name": "Google",
+      "level": "Beginner",
+      "language_code": "en",
+      "url": "https://www.coursera.org/professional-certificates/google-cybersecurity",
+      "is_active": true,
+      "description_text": "Learn foundational cybersecurity concepts, threat analysis, and incident response workflows.",
+      "outcomes_text": "Identify common threats and vulnerabilities. Use SIEM workflows and security logs. Communicate risk and remediation steps.",
+      "weekly_topics_text": "Week 1: Security fundamentals. Week 2: Threat landscape. Week 3: Incident response. Week 4: Security operations."
+    },
+    {
+      "provider": "coursera",
+      "provider_course_id": "wharton-business-analytics",
+      "title": "Business Analytics Specialization",
+      "partner_name": "University of Pennsylvania",
+      "level": "Intermediate",
+      "language_code": "en",
+      "url": "https://www.coursera.org/specializations/wharton-business-analytics",
+      "is_active": true,
+      "description_text": "Use data-driven methods for customer analytics, operations, accounting, and people analytics.",
+      "outcomes_text": "Interpret data for managerial decisions. Apply predictive analytics and segmentation methods. Build dashboard-oriented decision support.",
+      "weekly_topics_text": "Week 1: Data and decision framing. Week 2: Forecasting and classification. Week 3: Customer and operations analytics. Week 4: Managerial communication."
+    }
+  ]
+}

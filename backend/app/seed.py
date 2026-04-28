@@ -1,5 +1,9 @@
+from __future__ import annotations
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .embedding import embed_text
 from .models import Course
 
 
@@ -9,6 +13,7 @@ SAMPLE_COURSES = [
         "title": "Foundations of Project Management",
         "url": "https://www.coursera.org/learn/project-management-foundations",
         "partner_name": "Google",
+        "level": "Beginner",
         "description": (
             "Learn project management fundamentals including stakeholder management, "
             "project lifecycle, scheduling, and communication."
@@ -30,6 +35,7 @@ SAMPLE_COURSES = [
         "title": "Data Science Methodology",
         "url": "https://www.coursera.org/learn/data-science-methodology",
         "partner_name": "IBM",
+        "level": "Intermediate",
         "description": (
             "Explore end-to-end data science workflows from problem definition to "
             "model evaluation and communication."
@@ -51,6 +57,7 @@ SAMPLE_COURSES = [
         "title": "Digital Marketing Analytics in Practice",
         "url": "https://www.coursera.org/learn/digital-marketing-analytics-practice",
         "partner_name": "University of Illinois",
+        "level": "Intermediate",
         "description": (
             "Use analytics tools and experimentation to improve digital marketing "
             "performance across channels."
@@ -67,68 +74,30 @@ SAMPLE_COURSES = [
             "Optimization using analytics insights",
         ],
     },
-    {
-        "provider_course_id": "michigan-python-data",
-        "title": "Applied Data Science with Python",
-        "url": "https://www.coursera.org/specializations/data-science-python",
-        "partner_name": "University of Michigan",
-        "description": (
-            "Develop practical Python skills for data wrangling, analysis, and "
-            "visualization in real-world settings."
-        ),
-        "learning_outcomes": [
-            "Use pandas for data cleaning and transformation.",
-            "Perform exploratory data analysis and visualization.",
-            "Build reproducible analytical workflows in Python.",
-        ],
-        "weekly_topics": [
-            "Python for tabular data",
-            "Data cleaning with pandas",
-            "Visualization with matplotlib and seaborn",
-            "Applied analysis projects",
-        ],
-    },
-    {
-        "provider_course_id": "duke-ai-product-management",
-        "title": "AI Product Management",
-        "url": "https://www.coursera.org/learn/ai-product-management-duke",
-        "partner_name": "Duke University",
-        "description": (
-            "Learn to scope, design, and evaluate AI-enabled products with a focus "
-            "on value, data, and model constraints."
-        ),
-        "learning_outcomes": [
-            "Define AI product opportunities and constraints.",
-            "Assess data readiness for AI applications.",
-            "Measure product outcomes and iteration strategies.",
-        ],
-        "weekly_topics": [
-            "AI opportunity identification",
-            "Data strategy and feasibility",
-            "Model performance and product KPIs",
-            "Responsible AI and product iteration",
-        ],
-    },
 ]
 
 
 def seed_courses_if_empty(session: Session) -> int:
-    existing = session.query(Course).count()
-    if existing > 0:
-        return existing
+    existing = session.scalar(select(Course).limit(1))
+    if existing:
+        return session.query(Course).count()
 
-    for course_payload in SAMPLE_COURSES:
+    for payload in SAMPLE_COURSES:
         course = Course(
-            provider_course_id=course_payload["provider_course_id"],
-            title=course_payload["title"],
-            url=course_payload["url"],
-            partner_name=course_payload["partner_name"],
-            level=course_payload.get("level", "Mixed"),
+            provider="coursera",
+            provider_course_id=payload["provider_course_id"],
+            title=payload["title"],
+            url=payload["url"],
+            partner_name=payload["partner_name"],
+            level=payload["level"],
             is_active=True,
-            description_text=course_payload["description"],
-            outcomes_text="\n".join(course_payload["learning_outcomes"]),
-            weekly_topics_text="\n".join(course_payload["weekly_topics"]),
+            description_text=payload["description"],
+            outcomes_text="\n".join(payload["learning_outcomes"]),
+            weekly_topics_text="\n".join(payload["weekly_topics"]),
         )
+        course.description_embedding = embed_text(course.description_text)
+        course.outcomes_embedding = embed_text(course.outcomes_text)
+        course.weekly_topics_embedding = embed_text(course.weekly_topics_text)
         session.add(course)
 
     session.commit()

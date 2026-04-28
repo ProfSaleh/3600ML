@@ -34,6 +34,7 @@
         border-radius: 14px;
         padding: 1rem;
         box-shadow: 0 8px 24px rgba(2, 6, 23, 0.05);
+        margin-bottom: 1rem;
       }
       .grid {
         display: grid;
@@ -50,7 +51,8 @@
         margin-bottom: 0.4rem;
       }
       input,
-      textarea {
+      textarea,
+      select {
         width: 100%;
         box-sizing: border-box;
         border: 1px solid #cbd5e1;
@@ -60,6 +62,12 @@
       }
       input[type="file"] {
         padding: 0.5rem;
+      }
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-top: 0.6rem;
       }
       button {
         border: 0;
@@ -71,6 +79,9 @@
         font-weight: 600;
         cursor: pointer;
       }
+      button.secondary {
+        background: #374151;
+      }
       button:disabled {
         opacity: 0.65;
         cursor: wait;
@@ -80,8 +91,17 @@
         color: #1f2937;
         font-size: 0.95rem;
       }
+      .pill {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        font-size: 0.82rem;
+        margin-right: 0.5rem;
+      }
       .results {
-        margin-top: 1.5rem;
+        margin-top: 1.2rem;
         display: grid;
         gap: 1rem;
       }
@@ -114,7 +134,7 @@
         font-size: 0.82rem;
       }
       .parsed {
-        margin-top: 1.2rem;
+        margin-top: 1rem;
         background: #ffffff;
         border: 1px dashed #cbd5e1;
         border-radius: 14px;
@@ -132,6 +152,12 @@
         font-size: 0.88rem;
         color: #4b5563;
       }
+      .muted {
+        color: #6b7280;
+      }
+      .hidden {
+        display: none;
+      }
       @media (max-width: 900px) {
         .grid {
           grid-template-columns: 1fr;
@@ -146,19 +172,70 @@
     <div class="container">
       <h1>Syllabus to Coursera Recommender</h1>
       <p class="subtitle">
-        Upload a syllabus and receive top active Coursera course recommendations ranked by description, learning outcomes, and weekly topics alignment.
+        Faculty authentication, catalog ingestion, and semantic top-5 recommendations
+        using description + learning outcomes + weekly topic alignment.
       </p>
 
-      <form id="upload-form" class="panel">
+      <section id="auth-panel" class="panel">
+        <h3>Faculty Login / Registration</h3>
         <div class="grid">
           <div>
-            <label for="faculty_name">Faculty Name</label>
-            <input id="faculty_name" name="faculty_name" required placeholder="e.g., Dr. Jane Smith" />
+            <label for="full-name">Full Name</label>
+            <input id="full-name" placeholder="e.g., Dr. Jane Smith" />
           </div>
           <div>
             <label for="department">Department</label>
-            <input id="department" name="department" required placeholder="e.g., Information Systems" />
+            <input id="department" placeholder="e.g., Information Systems" />
           </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="faculty@ucdenver.edu" />
+          </div>
+          <div>
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Minimum 8 characters" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="register-btn" type="button">Register</button>
+          <button id="login-btn" type="button" class="secondary">Login</button>
+          <button id="logout-btn" type="button" class="secondary hidden">Logout</button>
+        </div>
+        <div id="auth-status" class="status" role="status"></div>
+      </section>
+
+      <section id="session-panel" class="panel hidden">
+        <h3>Session</h3>
+        <div id="session-meta" class="small"></div>
+      </section>
+
+      <section id="ingest-panel" class="panel hidden">
+        <h3>Catalog Ingestion (Admin)</h3>
+        <p class="small muted">
+          Use JSON feed by default, or switch to Coursera API if credentials are configured.
+        </p>
+        <div class="grid">
+          <div>
+            <label for="ingest-source">Source</label>
+            <select id="ingest-source">
+              <option value="json_feed">JSON feed</option>
+              <option value="coursera_api">Coursera API</option>
+            </select>
+          </div>
+          <div>
+            <label for="feed-path">Feed Path (optional)</label>
+            <input id="feed-path" placeholder="data/coursera_sample_feed.json" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="ingest-btn" type="button">Run Ingestion</button>
+        </div>
+        <div id="ingest-status" class="status"></div>
+      </section>
+
+      <form id="upload-form" class="panel hidden">
+        <h3>Upload Syllabus and Recommend</h3>
+        <div class="grid">
           <div class="full">
             <label for="title">Course Title</label>
             <input id="title" name="title" required placeholder="e.g., Business Data Analytics" />
@@ -168,27 +245,51 @@
             <input id="file" name="file" type="file" accept=".pdf,.docx,.txt,.md" required />
           </div>
         </div>
-        <button id="submit-btn" type="submit">Upload and Recommend</button>
+        <div class="actions">
+          <button id="submit-btn" type="submit">Upload and Recommend</button>
+          <button id="refresh-courses-btn" type="button" class="secondary">Refresh Course Count</button>
+        </div>
         <div id="status" class="status" role="status"></div>
       </form>
 
-      <section id="parsed" class="parsed" hidden></section>
+      <section id="parsed" class="parsed hidden"></section>
       <section id="results" class="results"></section>
     </div>
 
     <script>
-      const form = document.getElementById("upload-form");
+      const authStatusEl = document.getElementById("auth-status");
+      const sessionPanel = document.getElementById("session-panel");
+      const sessionMetaEl = document.getElementById("session-meta");
+      const ingestPanel = document.getElementById("ingest-panel");
+      const ingestStatusEl = document.getElementById("ingest-status");
+      const uploadForm = document.getElementById("upload-form");
       const statusEl = document.getElementById("status");
       const resultsEl = document.getElementById("results");
       const parsedEl = document.getElementById("parsed");
-      const submitBtn = document.getElementById("submit-btn");
 
-      function formatScore(value) {
-        return `${(value * 100).toFixed(1)}%`;
-      }
+      const registerBtn = document.getElementById("register-btn");
+      const loginBtn = document.getElementById("login-btn");
+      const logoutBtn = document.getElementById("logout-btn");
+      const submitBtn = document.getElementById("submit-btn");
+      const ingestBtn = document.getElementById("ingest-btn");
+      const refreshCoursesBtn = document.getElementById("refresh-courses-btn");
+
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const fullNameInput = document.getElementById("full-name");
+      const departmentInput = document.getElementById("department");
+      const titleInput = document.getElementById("title");
+      const fileInput = document.getElementById("file");
+      const ingestSourceInput = document.getElementById("ingest-source");
+      const feedPathInput = document.getElementById("feed-path");
+
+      let authState = {
+        token: localStorage.getItem("auth_token") || "",
+        user: null,
+      };
 
       function escapeHtml(text) {
-        return text
+        return String(text || "")
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
@@ -196,8 +297,148 @@
           .replaceAll("'", "&#39;");
       }
 
+      function formatScore(value) {
+        return `${(value * 100).toFixed(1)}%`;
+      }
+
+      async function api(path, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        if (authState.token) {
+          headers.Authorization = `Bearer ${authState.token}`;
+        }
+        const response = await fetch(path, { ...options, headers });
+        let body = null;
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          body = await response.json();
+        } else {
+          body = await response.text();
+        }
+        if (!response.ok) {
+          const detail = body && body.detail ? body.detail : String(body);
+          throw new Error(detail || `Request failed (${response.status})`);
+        }
+        return body;
+      }
+
+      function setAuthStatus(message) {
+        authStatusEl.textContent = message;
+      }
+
+      function setMainStatus(message) {
+        statusEl.textContent = message;
+      }
+
+      function applyAuthUi() {
+        const loggedIn = Boolean(authState.user);
+        sessionPanel.classList.toggle("hidden", !loggedIn);
+        uploadForm.classList.toggle("hidden", !loggedIn);
+        logoutBtn.classList.toggle("hidden", !loggedIn);
+        ingestPanel.classList.toggle("hidden", !loggedIn || !authState.user.is_admin);
+
+        if (!loggedIn) {
+          sessionMetaEl.innerHTML = "";
+          return;
+        }
+
+        const role = authState.user.is_admin ? "Admin" : "Faculty";
+        sessionMetaEl.innerHTML = `
+          <span class="pill">${escapeHtml(role)}</span>
+          <span class="pill">${escapeHtml(authState.user.department)}</span>
+          Logged in as <strong>${escapeHtml(authState.user.full_name)}</strong>
+          (${escapeHtml(authState.user.email)})
+        `;
+      }
+
+      async function refreshSession() {
+        if (!authState.token) {
+          authState.user = null;
+          applyAuthUi();
+          return;
+        }
+        try {
+          const me = await api("/api/auth/me");
+          authState.user = me;
+          setAuthStatus(`Authenticated as ${me.full_name}.`);
+        } catch (error) {
+          authState.token = "";
+          authState.user = null;
+          localStorage.removeItem("auth_token");
+          setAuthStatus("Session expired. Please login again.");
+        }
+        applyAuthUi();
+      }
+
+      async function shouldSuggestBootstrap() {
+        try {
+          const status = await api("/api/auth/bootstrap-status");
+          return !status.bootstrap_admin_configured;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      async function handleRegister() {
+        registerBtn.disabled = true;
+        try {
+          const makeAdmin = await shouldSuggestBootstrap();
+          const payload = {
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+            full_name: fullNameInput.value.trim(),
+            department: departmentInput.value.trim(),
+          };
+          const result = await api(`/api/auth/register?make_admin=${makeAdmin}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          authState.token = result.access_token;
+          authState.user = result.user;
+          localStorage.setItem("auth_token", authState.token);
+          setAuthStatus(`Registered and logged in as ${result.user.full_name}.`);
+          applyAuthUi();
+        } catch (error) {
+          setAuthStatus(`Registration failed: ${error.message}`);
+        } finally {
+          registerBtn.disabled = false;
+        }
+      }
+
+      async function handleLogin() {
+        loginBtn.disabled = true;
+        try {
+          const payload = {
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+          };
+          const result = await api("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          authState.token = result.access_token;
+          authState.user = result.user;
+          localStorage.setItem("auth_token", authState.token);
+          setAuthStatus(`Welcome back, ${result.user.full_name}.`);
+          applyAuthUi();
+        } catch (error) {
+          setAuthStatus(`Login failed: ${error.message}`);
+        } finally {
+          loginBtn.disabled = false;
+        }
+      }
+
+      function handleLogout() {
+        authState.token = "";
+        authState.user = null;
+        localStorage.removeItem("auth_token");
+        setAuthStatus("Logged out.");
+        applyAuthUi();
+      }
+
       function renderParsed(parsed) {
-        parsedEl.hidden = false;
+        parsedEl.classList.remove("hidden");
         parsedEl.innerHTML = `
           <h3>Parsed Syllabus Sections</h3>
           <p class="small"><strong>Description:</strong> ${escapeHtml(parsed.description || "Not detected")}</p>
@@ -214,7 +455,6 @@
           resultsEl.innerHTML = `<div class="result-card">No active courses found.</div>`;
           return;
         }
-
         payload.recommendations.forEach((rec) => {
           const card = document.createElement("article");
           card.className = "result-card";
@@ -234,43 +474,76 @@
         });
       }
 
-      form.addEventListener("submit", async (event) => {
+      async function handleIngest() {
+        ingestBtn.disabled = true;
+        ingestStatusEl.textContent = "Running catalog ingestion...";
+        try {
+          const payload = {
+            source: ingestSourceInput.value,
+            feed_path: feedPathInput.value.trim() || null,
+          };
+          const result = await api("/api/catalog/ingest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          ingestStatusEl.textContent = `Ingestion ${result.status}. Ingested: ${result.ingested_count}, created: ${result.created_count}, updated: ${result.updated_count}.`;
+        } catch (error) {
+          ingestStatusEl.textContent = `Ingestion failed: ${error.message}`;
+        } finally {
+          ingestBtn.disabled = false;
+        }
+      }
+
+      async function refreshCourseCount() {
+        try {
+          const courses = await api("/api/courses?active_only=true&limit=500");
+          setMainStatus(`Catalog ready: ${courses.length} active courses available for matching.`);
+        } catch (error) {
+          setMainStatus(`Unable to read courses: ${error.message}`);
+        }
+      }
+
+      uploadForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         resultsEl.innerHTML = "";
-        parsedEl.hidden = true;
-        statusEl.textContent = "Uploading syllabus and parsing sections...";
+        parsedEl.classList.add("hidden");
         submitBtn.disabled = true;
+        setMainStatus("Uploading syllabus and parsing sections...");
 
         try {
-          const formData = new FormData(form);
-          const uploadResp = await fetch("/api/syllabi/upload", {
+          const formData = new FormData();
+          formData.append("title", titleInput.value.trim());
+          formData.append("file", fileInput.files[0]);
+
+          const uploadData = await api("/api/syllabi/upload", {
             method: "POST",
             body: formData,
           });
-          if (!uploadResp.ok) {
-            throw new Error(`Upload failed (${uploadResp.status})`);
-          }
-
-          const uploadData = await uploadResp.json();
           renderParsed(uploadData.parsed);
-          statusEl.textContent = "Generating top recommendations...";
+          setMainStatus("Generating semantic recommendations...");
 
-          const recResp = await fetch(`/api/recommendations/${uploadData.syllabus_id}?top_n=5`, {
+          const recData = await api(`/api/recommendations/${uploadData.syllabus_id}?top_n=5`, {
             method: "POST",
           });
-          if (!recResp.ok) {
-            throw new Error(`Recommendation failed (${recResp.status})`);
-          }
-
-          const recData = await recResp.json();
           renderRecommendations(recData);
-          statusEl.textContent = "Done. Top 5 recommendations generated.";
+          setMainStatus("Done. Top 5 recommendations generated.");
         } catch (error) {
-          statusEl.textContent = `Error: ${error.message}`;
+          setMainStatus(`Error: ${error.message}`);
         } finally {
           submitBtn.disabled = false;
         }
       });
+
+      registerBtn.addEventListener("click", handleRegister);
+      loginBtn.addEventListener("click", handleLogin);
+      logoutBtn.addEventListener("click", handleLogout);
+      ingestBtn.addEventListener("click", handleIngest);
+      refreshCoursesBtn.addEventListener("click", refreshCourseCount);
+
+      applyAuthUi();
+      setAuthStatus("Please register or login to continue.");
+      refreshSession();
     </script>
   </body>
 </html>

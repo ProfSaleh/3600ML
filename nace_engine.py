@@ -250,6 +250,95 @@ PLACEMENT_SECTION_MAP = {
     "Group Assignments": "Assignments",
 }
 
+EXEMPLAR_LIBRARY: Dict[str, dict] = {
+    "career_self_development": {
+        "strong_evidence_example": (
+            "Week 5 Reflection: Students submit a professional growth memo, map two career "
+            "goals, and revise the memo after instructor feedback using a reflection rubric."
+        ),
+        "suggestion_stem": (
+            "Add a reflection checkpoint with revision criteria and require students to connect "
+            "course performance to a professional development goal."
+        ),
+    },
+    "communication": {
+        "strong_evidence_example": (
+            "Week 6 Policy Brief: Students produce a 2-page brief for a non-technical audience "
+            "and present it in class, evaluated with communication rubric criteria."
+        ),
+        "suggestion_stem": (
+            "Specify audience, message purpose, and rubric criteria for clarity, evidence use, "
+            "and organization."
+        ),
+    },
+    "critical_thinking": {
+        "strong_evidence_example": (
+            "Week 4 Case Analysis: Students evaluate two competing evidence sources, justify "
+            "their decision, and defend trade-offs in a short written argument."
+        ),
+        "suggestion_stem": (
+            "Require students to compare evidence options, justify choices, and explain trade-offs "
+            "using explicit analysis criteria."
+        ),
+    },
+    "equity_inclusion": {
+        "strong_evidence_example": (
+            "Week 7 Discussion: Students analyze how policy decisions affect diverse communities "
+            "and propose inclusive alternatives with supporting evidence."
+        ),
+        "suggestion_stem": (
+            "Prompt students to analyze impact across diverse groups and include an inclusion-focused "
+            "evaluation criterion."
+        ),
+    },
+    "leadership": {
+        "strong_evidence_example": (
+            "Project Milestone: Team leaders rotate weekly, document delegation decisions, and "
+            "reflect on team outcomes using a leadership rubric."
+        ),
+        "suggestion_stem": (
+            "Define rotating leadership roles, decision accountability, and team-impact reflection."
+        ),
+    },
+    "professionalism": {
+        "strong_evidence_example": (
+            "Assignment Submission Policy: Work is evaluated for quality, timeliness, and professional "
+            "standards with a transparent rubric."
+        ),
+        "suggestion_stem": (
+            "Add explicit professional standards (timeliness, quality, ethical conduct) and grade "
+            "against those standards."
+        ),
+    },
+    "teamwork": {
+        "strong_evidence_example": (
+            "Week 8 Team Sprint: Students set shared goals, complete peer feedback, and submit "
+            "a contribution log with conflict-resolution notes."
+        ),
+        "suggestion_stem": (
+            "Require clear team roles, peer feedback, and contribution evidence to assess collaboration."
+        ),
+    },
+    "technology": {
+        "strong_evidence_example": (
+            "Week 9 Data Task: Students use a digital analysis tool, interpret outputs, and document "
+            "ethical/privacy implications in a short methods note."
+        ),
+        "suggestion_stem": (
+            "Name the digital tool, expected workflow, and evaluation criteria for interpretation and "
+            "ethical technology use."
+        ),
+    },
+}
+
+QUALITY_SIGNAL_TERMS = {
+    "measurable_verb": ("analyze", "evaluate", "create", "design", "develop", "justify", "apply"),
+    "deliverable": ("submit", "brief", "report", "memo", "presentation", "project", "quiz", "exam"),
+    "assessment_criteria": ("rubric", "graded", "criteria", "points", "score"),
+    "audience_or_context": ("audience", "client", "community", "stakeholder", "real-world"),
+    "feedback_or_iteration": ("feedback", "revise", "peer review", "revision"),
+}
+
 
 def _score_from_hits(hit_count: int) -> str:
     if hit_count >= 6:

@@ -56,8 +56,13 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert "section" in evidence_item
     assert "excerpt" in evidence_item
     assert "reason" in evidence_item
+    assert "quality_signals" in evidence_item
+    assert "quality_gap" in evidence_item
+    assert "missing_signal_examples" in evidence_item
     assert evidence_item["strength"] in {"Strong", "Moderate"}
     assert evidence_item["source_type"] in {"weekly", "course-level"}
+    assert "great_examples" in analysis["communication"]
+    assert analysis["communication"]["great_examples"]
 
 
 def test_recommendation_and_render_pipeline():
@@ -71,6 +76,7 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["communication"]["name"] == "Communication"
     assert recommendations["technology"]["name"] == "Technology"
     assert recommendations["communication"]["weekly_task_suggestions"]
+    assert recommendations["communication"]["exemplar_rewrites"]
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,
@@ -100,3 +106,4 @@ def test_assignment_mode_does_not_penalize_missing_syllabus_sections():
     assert analysis["communication"]["assignment_mode"] is True
     assert analysis["_analysis_meta"]["assignment_mode"] is True
     assert analysis["communication"]["score"] >= 35
+    assert analysis["communication"]["great_examples"]

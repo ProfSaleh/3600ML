@@ -254,7 +254,13 @@ def step_3_evidence_select() -> None:
                     st.markdown(
                         f"   - **Why this matters:** {evidence['reason']}"
                     )
+                    st.markdown(
+                        f"   - **Quality diagnostics:** {evidence.get('quality_diagnostics', 'N/A')}"
+                    )
                     st.code(evidence["excerpt"], language="text")
+                    if evidence.get("exemplar"):
+                        st.markdown("   - **Great example to emulate:**")
+                        st.code(evidence["exemplar"], language="text")
             else:
                 st.markdown("- No direct evidence found in this syllabus text.")
             selected = st.checkbox(

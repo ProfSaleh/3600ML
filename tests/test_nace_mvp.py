@@ -83,3 +83,20 @@ def test_recommendation_and_render_pipeline():
     assert "Revised Syllabus Draft" in revised
     assert "[Communication] (communication)" in revised
     assert "ANLY 101 Intro to Applied Analysis" in revised
+
+
+def test_assignment_mode_does_not_penalize_missing_syllabus_sections():
+    assignment_text = """
+    Project 2: Community Impact Proposal
+    Instructions:
+    - Submit a written brief for a public audience.
+    - Week 3 DQ: Peer review two proposals and provide actionable feedback.
+    - Week 4 Quiz: Evaluate evidence quality and data interpretation.
+    - Final project presentation with rubric-based grading.
+    """
+    sections = split_into_sections(assignment_text)
+    analysis = evaluate_syllabus(assignment_text, sections, assignment_mode=True)
+
+    assert analysis["communication"]["analysis_mode"] == "assignment"
+    assert analysis["communication"]["weekly_focus"]["assignment_mode"] is True
+    assert analysis["communication"]["score"] >= 35

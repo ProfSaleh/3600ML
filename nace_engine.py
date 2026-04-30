@@ -426,43 +426,94 @@ def _collect_weekly_lines(sections: Dict[str, str]) -> List[str]:
     return weekly_lines
 
 
-def _weekly_overview(weekly_lines: List[str]) -> dict:
-    if not weekly_lines:
+def _collect_activity_lines(
+    sections: Dict[str, str], assignment_mode: bool = False
+) -> List[str]:
+    activity_lines: List[str] = []
+    seen = set()
+    source_sections = ["Weekly Schedule", "Assignments", "Assessment"]
+    if assignment_mode:
+        source_sections.append("General")
+
+    for section_name in source_sections:
+        content = sections.get(section_name, "")
+        if not content:
+            continue
+        for line in content.split("\n"):
+            cleaned = line.strip(" -\t")
+            if len(cleaned) < 12:
+                continue
+            lowered = cleaned.lower()
+            if not (_contains_task_marker(lowered) or _is_weekly_content(lowered)):
+                continue
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            activity_lines.append(cleaned)
+    return activity_lines
+
+
+def _weekly_overview(activity_lines: List[str], assignment_mode: bool) -> dict:
+    if not activity_lines:
+        if assignment_mode:
+            summary = (
+                "No clear assignment activity lines were detected. Include assignment prompt "
+                "details, rubric criteria, or deliverable instructions to improve confidence."
+            )
+        else:
+            summary = (
+                "Weekly breakdown was not clearly detected. Add week-by-week assignment "
+                "or activity lines (e.g., DQ, quiz, project milestone)."
+            )
         return {
             "line_count": 0,
             "task_like_count": 0,
             "coverage": "Low",
-            "summary": (
-                "Weekly breakdown was not clearly detected. Add week-by-week assignment "
-                "or activity lines (e.g., DQ, quiz, project milestone)."
-            ),
+            "summary": summary,
         }
-    task_like = [line for line in weekly_lines if _contains_task_marker(line)]
+    task_like = [line for line in activity_lines if _contains_task_marker(line)]
     if len(task_like) >= 6:
         coverage = "High"
     elif len(task_like) >= 3:
         coverage = "Medium"
     else:
         coverage = "Low"
-    summary = (
-        f"Detected {len(weekly_lines)} weekly lines; {len(task_like)} include concrete "
-        "tasks (assignments, discussions, quizzes, exams, or projects)."
-    )
+    if assignment_mode:
+        summary = (
+            f"Detected {len(activity_lines)} assignment/activity lines; {len(task_like)} include "
+            "concrete tasks (assignments, discussions, quizzes, exams, or projects)."
+        )
+    else:
+        summary = (
+            f"Detected {len(activity_lines)} weekly/activity lines; {len(task_like)} include "
+            "concrete tasks (assignments, discussions, quizzes, exams, or projects)."
+        )
     return {
-        "line_count": len(weekly_lines),
+        "line_count": len(activity_lines),
         "task_like_count": len(task_like),
         "coverage": coverage,
         "summary": summary,
     }
 
 
-def _build_analysis_notes(sections: Dict[str, str], weekly_lines: List[str]) -> dict:
+def _build_analysis_notes(
+    sections: Dict[str, str], activity_lines: List[str], assignment_mode: bool
+) -> dict:
     outcomes_present = bool(sections.get("Learning Outcomes", "").strip())
     description_present = bool(
         sections.get("Course Description", "").strip()
         or sections.get("General", "").strip()
     )
     weekly_present = bool(weekly_lines)
+    stage_2_summary = (
+        "Primary scoring emphasis is based on assignment-level tasks (assignments, DQs, "
+        "quizzes, exams, projects, rubrics, and instructions)."
+        if assignment_mode
+        else (
+            "Primary scoring emphasis is based on weekly tasks (assignments, DQs, quizzes, "
+            "exams, projects, labs, and presentations)."
+        )
+    )
     return {
         "stage_1": {
             "title": "Stage 1: Outcomes and course framing",
@@ -474,20 +525,25 @@ def _build_analysis_notes(sections: Dict[str, str], weekly_lines: List[str]) -> 
         },
         "stage_2": {
             "title": "Stage 2: Weekly breakdown and task evidence",
-            "summary": (
-                "Primary scoring emphasis is based on weekly tasks (assignments, DQs, quizzes, "
-                "exams, projects, labs, and presentations)."
-            ),
+            "summary": stage_2_summary,
             "weekly_found": weekly_present,
-            "weekly_line_count": len(weekly_lines),
+            "weekly_line_count": len(activity_lines),
         },
+        "mode": "assignment" if assignment_mode else "syllabus",
     }
 
 
-def _missing_explanation(hit_count: int, competency_name: str) -> str:
+def _missing_explanation(
+    hit_count: int, competency_name: str, assignment_mode: bool
+) -> str:
+    context = (
+        "in this uploaded assignment artifact"
+        if assignment_mode
+        else "in this syllabus"
+    )
     if hit_count == 0:
         return (
-            f"No clear {competency_name} language was found, so faculty may struggle "
+            f"No clear {competency_name} language was found {context}, so faculty may struggle "
             "to show where this skill is taught or assessed."
         )
     if hit_count <= 2:
@@ -552,16 +608,25 @@ def _copy_ready_text(definition: CompetencyDefinition, target_label: str) -> str
     return f"Suggested Addition: {definition.light_template}"
 
 
-def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dict]:
+def evaluate_syllabus(
+    _raw_text: str, sections: Dict[str, str], assignment_mode: bool = False
+) -> Dict[str, dict]:
     results: Dict[str, dict] = {}
-    weekly_lines = _collect_weekly_lines(sections)
-    weekly_summary = _weekly_overview(weekly_lines)
-    analysis_notes = _build_analysis_notes(sections, weekly_lines)
+    activity_lines = _collect_activity_lines(sections, assignment_mode=assignment_mode)
+    weekly_summary = _weekly_overview(activity_lines, assignment_mode=assignment_mode)
+    analysis_notes = _build_analysis_notes(
+        sections, activity_lines, assignment_mode=assignment_mode
+    )
+    activity_source_chunks = [
+        sections.get("Weekly Schedule", ""),
+        sections.get("Assignments", ""),
+        sections.get("Assessment", ""),
+    ]
+    if assignment_mode:
+        activity_source_chunks.append(sections.get("General", ""))
     weekly_activity_text_lc = "\n".join(
         [
-            sections.get("Weekly Schedule", ""),
-            sections.get("Assignments", ""),
-            sections.get("Assessment", ""),
+            chunk for chunk in activity_source_chunks if chunk
         ]
     ).lower()
 
@@ -573,23 +638,27 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
         evidence_weekly_count = sum(
             1 for item in evidence if _is_weekly_content(item["excerpt"])
         )
-        weighted_hits = hits + weekly_indicator_hits + evidence_weekly_count
+        if assignment_mode:
+            weighted_hits = hits + (weekly_indicator_hits * 2) + evidence_weekly_count
+        else:
+            weighted_hits = hits + weekly_indicator_hits + evidence_weekly_count
         weighted_hits = min(weighted_hits, len(competency.indicators))
 
         level = _score_from_hits(weighted_hits)
         score = _numeric_score(weighted_hits)
         missing = level == "Low"
         rationale = (
-            f"Detected {hits} indicators overall and {weekly_indicator_hits} within weekly breakdown, "
-            f"resulting in a {level} coverage rating with weekly emphasis."
+            f"Detected {hits} indicators overall and {weekly_indicator_hits} in "
+            f"{'assignment activity lines' if assignment_mode else 'weekly breakdown'}, "
+            f"resulting in a {level} coverage rating with activity emphasis."
         )
         if missing:
             rationale += " Coverage is weak or missing and needs explicit measurable language."
 
         confidence = "High" if weighted_hits >= 5 else "Medium" if weighted_hits >= 2 else "Low"
         weekly_priority_note = (
-            f"Weekly evidence matches for this competency: {evidence_weekly_count}. "
-            "Add explicit weekly tasks if this is low."
+            f"Activity evidence matches for this competency: {evidence_weekly_count}. "
+            "Add explicit assignment/assessment tasks if this is low."
         )
 
         results[key] = {
@@ -604,17 +673,21 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
             "matched_indicators": matched_indicators,
             "confidence": confidence,
             "rationale": rationale,
-            "missing_explanation": _missing_explanation(hits, competency.name),
+            "missing_explanation": _missing_explanation(
+                hits, competency.name, assignment_mode=assignment_mode
+            ),
             "recommended_focus": _focus_action(competency),
             "weekly_priority_note": weekly_priority_note,
             "weekly_focus": {
-                "has_weekly_items": bool(weekly_lines),
+                "has_weekly_items": bool(activity_lines),
                 "weekly_lines_found": weekly_summary["line_count"],
+                "activity_lines_found": weekly_summary["line_count"],
                 "task_items_found": weekly_summary["task_like_count"],
                 "competency_weekly_matches": evidence_weekly_count,
                 "summary": weekly_summary["summary"],
             },
             "analysis_flow": analysis_notes,
+            "assignment_mode": assignment_mode,
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -623,14 +696,19 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
             },
         }
 
+    results["_analysis_meta"] = {
+        "weekly_summary": weekly_summary,
+        "analysis_notes": analysis_notes,
+        "assignment_mode": assignment_mode,
+    }
     return results
 
 
 def generate_recommendations(
-    sections: Dict[str, str], selected_competencies: List[str]
+    sections: Dict[str, str], selected_competencies: List[str], assignment_mode: bool = False
 ) -> Dict[str, dict]:
     recommendations: Dict[str, dict] = {}
-    weekly_lines = _collect_weekly_lines(sections)
+    activity_lines = _collect_activity_lines(sections, assignment_mode=assignment_mode)
     for key in selected_competencies:
         definition = COMPETENCIES[key]
         placements = []
@@ -639,7 +717,7 @@ def generate_recommendations(
             plan["copy_ready_text"] = _copy_ready_text(definition, target_label)
             placements.append(plan)
         weekly_task_suggestions: List[str] = []
-        for line in weekly_lines[:10]:
+        for line in activity_lines[:10]:
             if _contains_task_marker(line):
                 weekly_task_suggestions.append(
                     f"{line}\nSuggested addition: {definition.light_template}"
@@ -647,10 +725,16 @@ def generate_recommendations(
             if len(weekly_task_suggestions) >= 3:
                 break
         if not weekly_task_suggestions:
-            weekly_task_suggestions = [
-                "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
-                "Add a graded milestone in weekly schedule tied to this competency.",
-            ]
+            if assignment_mode:
+                weekly_task_suggestions = [
+                    "Add one assignment instruction that explicitly names this competency and how it will be graded.",
+                    "Add one rubric row tied to this competency with clear performance criteria.",
+                ]
+            else:
+                weekly_task_suggestions = [
+                    "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
+                    "Add a graded milestone in weekly schedule tied to this competency.",
+                ]
         recommendations[key] = {
             "name": definition.name,
             "placements": placements,

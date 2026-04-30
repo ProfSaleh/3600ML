@@ -33,6 +33,7 @@ def init_state() -> None:
         "course_name": "",
         "course_code": "",
         "term": "",
+        "assignment_mode": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -74,7 +75,11 @@ def render_header() -> None:
 
 def parse_and_analyze(text: str) -> None:
     sections = split_into_sections(text)
-    analysis = evaluate_syllabus(text, sections)
+    analysis = evaluate_syllabus(
+        text,
+        sections,
+        assignment_mode=st.session_state.assignment_mode,
+    )
     st.session_state.syllabus_text = text
     st.session_state.sections = sections
     st.session_state.analysis = analysis
@@ -97,6 +102,15 @@ def step_1_upload() -> None:
         st.session_state.course_name = st.text_input("Course Name", st.session_state.course_name)
         st.session_state.course_code = st.text_input("Course Code", st.session_state.course_code)
         st.session_state.term = st.text_input("Term", st.session_state.term)
+        st.session_state.assignment_mode = st.toggle(
+            "Assignment Mode (single assignment upload)",
+            value=st.session_state.assignment_mode,
+            help=(
+                "Use this when uploading one assignment instead of a full syllabus. "
+                "Scoring will prioritize assignment/rubric content and avoid penalizing "
+                "missing syllabus-wide sections."
+            ),
+        )
         uploaded = st.file_uploader("Upload syllabus", type=["pdf", "docx", "txt"])
     with right:
         pasted = st.text_area(
@@ -268,6 +282,7 @@ def step_3_evidence_select() -> None:
             st.session_state.recommendations = generate_recommendations(
                 st.session_state.sections,
                 selections,
+                assignment_mode=st.session_state.assignment_mode,
             )
             go_to_step(4)
             st.rerun()

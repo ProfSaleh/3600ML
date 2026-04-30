@@ -51,8 +51,10 @@ def test_recommendation_and_render_pipeline():
         sections, ["communication", "technology"]
     )
 
-    assert "Communication" in recommendations
-    assert "Technology" in recommendations
+    assert "communication" in recommendations
+    assert "technology" in recommendations
+    assert recommendations["communication"]["name"] == "Communication"
+    assert recommendations["technology"]["name"] == "Technology"
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,
@@ -63,5 +65,5 @@ def test_recommendation_and_render_pipeline():
     )
 
     assert "Revised Syllabus Draft" in revised
-    assert "[Communication]" in revised
+    assert "[Communication] (communication)" in revised
     assert "ANLY 101 Intro to Applied Analysis" in revised

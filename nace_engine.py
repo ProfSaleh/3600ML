@@ -504,7 +504,7 @@ def _build_analysis_notes(
         sections.get("Course Description", "").strip()
         or sections.get("General", "").strip()
     )
-    weekly_present = bool(weekly_lines)
+    weekly_present = bool(activity_lines)
     stage_2_summary = (
         "Primary scoring emphasis is based on assignment-level tasks (assignments, DQs, "
         "quizzes, exams, projects, rubrics, and instructions)."
@@ -687,6 +687,7 @@ def evaluate_syllabus(
                 "summary": weekly_summary["summary"],
             },
             "analysis_flow": analysis_notes,
+            "analysis_mode": "assignment" if assignment_mode else "syllabus",
             "assignment_mode": assignment_mode,
             "evidence": evidence,
             "placement_targets": competency.placement_targets,

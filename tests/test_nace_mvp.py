@@ -42,7 +42,7 @@ def test_evaluate_syllabus_returns_all_competencies():
     sections = split_into_sections(SAMPLE_SYLLABUS)
     analysis = evaluate_syllabus(SAMPLE_SYLLABUS, sections)
 
-    assert len(analysis) == 8
+    assert len([k for k in analysis.keys() if not k.startswith("_")]) == 8
     assert "communication" in analysis
     assert "critical_thinking" in analysis
     assert analysis["communication"]["score"] >= 20
@@ -97,6 +97,6 @@ def test_assignment_mode_does_not_penalize_missing_syllabus_sections():
     sections = split_into_sections(assignment_text)
     analysis = evaluate_syllabus(assignment_text, sections, assignment_mode=True)
 
-    assert analysis["communication"]["analysis_mode"] == "assignment"
-    assert analysis["communication"]["weekly_focus"]["assignment_mode"] is True
+    assert analysis["communication"]["assignment_mode"] is True
+    assert analysis["_analysis_meta"]["assignment_mode"] is True
     assert analysis["communication"]["score"] >= 35

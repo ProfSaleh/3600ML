@@ -193,6 +193,22 @@ COMPETENCIES: Dict[str, CompetencyDefinition] = {
 }
 
 
+PLACEMENT_SECTION_MAP = {
+    "Learning Outcomes": "Learning Outcomes",
+    "Assignments": "Assignments",
+    "Weekly Activities": "Weekly Schedule",
+    "Weekly Schedule": "Weekly Schedule",
+    "Assessments": "Assessment",
+    "Assessment": "Assessment",
+    "Course Policies": "Policies",
+    "Policies": "Policies",
+    "Assignment Instructions": "Assignments",
+    "Rubrics": "Assessment",
+    "Group Project Instructions": "Assignments",
+    "Group Assignments": "Assignments",
+}
+
+
 def _score_from_hits(hit_count: int) -> str:
     if hit_count >= 6:
         return "High"
@@ -202,7 +218,7 @@ def _score_from_hits(hit_count: int) -> str:
 
 
 def _numeric_score(hit_count: int) -> int:
-    # 2 baseline points + 9 points per hit, capped at 95.
+    # Baseline + weighted indicator hits, capped at 95.
     return min(95, 20 + (hit_count * 9))
 
 
@@ -211,6 +227,74 @@ def _preview(text: str, max_len: int = 200) -> str:
     if len(cleaned) <= max_len:
         return cleaned
     return cleaned[: max_len - 3].rstrip() + "..."
+
+
+def _missing_explanation(hit_count: int, competency_name: str) -> str:
+    if hit_count == 0:
+        return (
+            f"No clear {competency_name} language was found, so faculty may struggle "
+            "to show where this skill is taught or assessed."
+        )
+    if hit_count <= 2:
+        return (
+            f"{competency_name} appears only in limited or implied ways. "
+            "Students can benefit from explicit outcomes and assignment criteria."
+        )
+    return (
+        f"{competency_name} has partial coverage but could be made easier to understand "
+        "with clearer measurable language."
+    )
+
+
+def _focus_action(competency: CompetencyDefinition) -> str:
+    return (
+        f"Prioritize updates in: {', '.join(competency.placement_targets[:2])}. "
+        "Add one measurable outcome and one assignment/rubric criterion."
+    )
+
+
+def _resolve_section(target_label: str) -> str:
+    return PLACEMENT_SECTION_MAP.get(target_label, "General")
+
+
+def _insertion_plan(target_label: str, sections: Dict[str, str]) -> dict:
+    section_name = _resolve_section(target_label)
+    section_text = sections.get(section_name, "").strip()
+    if section_text:
+        anchor = _preview(section_text.split("\n")[0], 120)
+        return {
+            "target_label": target_label,
+            "section_name": section_name,
+            "status": "Found existing section",
+            "exact_location": (
+                f"Go to the '{section_name}' section and add this near: \"{anchor}\"."
+            ),
+            "insertion_point": "Append as a new bullet near the end of the section.",
+        }
+    return {
+        "target_label": target_label,
+        "section_name": section_name,
+        "status": "Section missing",
+        "exact_location": (
+            f"Create a '{section_name}' section and place this competency text there."
+        ),
+        "insertion_point": "Insert this section after course goals or assignment overview.",
+    }
+
+
+def _copy_ready_text(definition: CompetencyDefinition, target_label: str) -> str:
+    if target_label == "Learning Outcomes":
+        return f"Learning Outcome Addition: {definition.strong_template}"
+    if target_label in {"Assignments", "Assignment Instructions", "Group Assignments"}:
+        return f"Assignment Language Addition: {definition.light_template}"
+    if target_label in {"Rubrics", "Assessment", "Assessments"}:
+        return (
+            "Rubric Criterion Addition: Add a criterion that directly evaluates this "
+            f"competency. Suggested wording: {definition.light_template}"
+        )
+    if target_label in {"Course Policies", "Policies"}:
+        return f"Policy/Expectation Addition: {definition.light_template}"
+    return f"Suggested Addition: {definition.light_template}"
 
 
 def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dict]:
@@ -260,6 +344,8 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
             "matched_indicators": matched_indicators,
             "confidence": confidence,
             "rationale": rationale,
+            "missing_explanation": _missing_explanation(hits, competency.name),
+            "recommended_focus": _focus_action(competency),
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -275,11 +361,16 @@ def generate_recommendations(
     sections: Dict[str, str], selected_competencies: List[str]
 ) -> Dict[str, dict]:
     recommendations: Dict[str, dict] = {}
-    _ = sections  # reserved for future section-aware text placement
     for key in selected_competencies:
         definition = COMPETENCIES[key]
-        recommendations[definition.name] = {
-            "placements": definition.placement_targets,
+        placements = []
+        for target_label in definition.placement_targets:
+            plan = _insertion_plan(target_label, sections)
+            plan["copy_ready_text"] = _copy_ready_text(definition, target_label)
+            placements.append(plan)
+        recommendations[key] = {
+            "name": definition.name,
+            "placements": placements,
             "why": (
                 "These sections are where this competency is usually made explicit "
                 "and assessable in a syllabus."
@@ -305,13 +396,20 @@ def render_revised_syllabus(
         "---- Suggested Competency Insertions ----",
     ]
     blocks: List[str] = []
-    for competency, payload in recommendations.items():
-        placements = ", ".join(payload["placements"])
+    for competency_key, payload in recommendations.items():
+        placement_lines = []
+        for placement in payload["placements"]:
+            placement_lines.append(
+                f"- {placement['target_label']} -> {placement['exact_location']} "
+                f"({placement['insertion_point']})"
+            )
+        placements = "\n".join(placement_lines)
         blocks.extend(
             [
                 "",
-                f"[{competency}]",
-                f"Recommended placement: {placements}",
+                f"[{payload['name']}] ({competency_key})",
+                "Recommended placement plan:",
+                placements,
                 f"Light edit: {payload['light_edit']}",
                 f"Strong integration: {payload['strong_edit']}",
             ]

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Dict, List
 
 import streamlit as st
 
 from nace_engine import (
-    COMPETENCY_DEFS,
     evaluate_syllabus,
     generate_recommendations,
     render_revised_syllabus,
 )
-from parser import SectionMap, extract_text_from_upload, split_into_sections
+from parser import extract_text_from_upload, split_into_sections
 
 st.set_page_config(page_title="NACE Syllabus Assistant", page_icon="🎓", layout="wide")
 
@@ -51,6 +49,10 @@ def score_color(level: str) -> str:
     if level == "Medium":
         return "🟡"
     return "🔴"
+
+
+def score_badge(level: str, score: int) -> str:
+    return f"{score_color(level)} {level} ({score}/100)"
 
 
 def render_header() -> None:
@@ -123,16 +125,24 @@ def step_2_scorecard() -> None:
             score = result["score"]
             status = "Missing / Weak" if level == "Low" else "Present"
             st.markdown(
-                f"### {score_color(level)} {name}\n"
-                f"- **Score:** {score}/100 (**{level}**)\n"
+                f"### {result['name']}\n"
+                f"- **Status:** {score_badge(level, score)}\n"
                 f"- **Status:** {status}\n"
                 f"- **Confidence:** {result['confidence']}"
             )
-            st.caption(result["rationale"])
+            st.caption(result["description"])
+            if result["missing_or_weak"]:
+                st.warning(result["missing_explanation"], icon="⚠️")
+                st.info(result["recommended_focus"], icon="🧭")
+            else:
+                st.success("This competency has clear evidence in your syllabus.")
 
-    missing = [k for k, v in analysis.items() if v["level"] == "Low"]
+    missing = [v["name"] for v in analysis.values() if v["level"] == "Low"]
     if missing:
-        st.error("Missing/weak competencies: " + ", ".join(missing))
+        st.error(
+            "Competencies that need attention: " + ", ".join(missing),
+            icon="🚩",
+        )
     else:
         st.success("No competencies currently flagged as low.")
 
@@ -154,24 +164,31 @@ def step_3_evidence_select() -> None:
 
     st.subheader("Step 3: Evidence + rationale + select competencies")
     analysis: Dict[str, dict] = st.session_state.analysis
-    selections: List[str] = []
+    selections: List[str] = st.session_state.selected_competencies[:]
 
-    for competency, result in analysis.items():
+    for competency_key, result in analysis.items():
+        competency_name = result["name"]
         with st.container(border=True):
-            st.markdown(f"### {competency} — {result['level']} ({result['score']}/100)")
-            st.write(result["rationale"])
+            st.markdown(f"### {competency_name}")
+            st.markdown(f"**Coverage:** {score_badge(result['level'], result['score'])}")
+            st.write(result["missing_explanation"])
+            st.caption(result["recommended_focus"])
             st.markdown("**Evidence found**")
             if result["evidence"]:
                 for snippet in result["evidence"]:
                     st.markdown(f"- `{snippet}`")
             else:
-                st.markdown("- No direct evidence found.")
-            if st.checkbox(
-                f"Select {competency} for improvement",
-                value=competency in st.session_state.selected_competencies,
-                key=f"select_{competency}",
-            ):
-                selections.append(competency)
+                st.markdown("- No direct evidence found in this syllabus text.")
+            selected = st.checkbox(
+                f"Select {competency_name} for improvement",
+                value=competency_key in st.session_state.selected_competencies,
+                key=f"select_{competency_key}",
+                help="Select competencies you want placement-ready edits for.",
+            )
+            if selected and competency_key not in selections:
+                selections.append(competency_key)
+            if not selected and competency_key in selections:
+                selections.remove(competency_key)
 
     st.session_state.selected_competencies = selections
     c1, c2 = st.columns([1, 1])
@@ -198,28 +215,37 @@ def step_4_recommendations() -> None:
         return
 
     st.subheader("Step 4: Placement recommendations")
-    st.caption("Each competency has target sections, a light edit, and a stronger integration option.")
+    st.caption(
+        "Each competency below includes exact placement directions and copy-ready text "
+        "you can paste into your syllabus."
+    )
     recommendations: Dict[str, dict] = st.session_state.recommendations
 
-    for competency, payload in recommendations.items():
+    for competency_key, payload in recommendations.items():
         with st.container(border=True):
-            st.markdown(f"### {competency}")
-            st.markdown("**Best placement locations**")
-            for i, location in enumerate(payload["placements"], start=1):
-                st.markdown(f"{i}. {location}")
+            st.markdown(f"### {payload['name']}")
+            st.markdown("**Where to place this competency (exact plan)**")
+            for i, placement in enumerate(payload["placements"], start=1):
+                status_emoji = "✅" if placement["status"] == "Found existing section" else "➕"
+                st.markdown(
+                    f"{i}. {status_emoji} **{placement['target_label']}** "
+                    f"→ Section: `{placement['section_name']}`"
+                )
+                st.markdown(f"   - **Instruction:** {placement['exact_location']}")
+                st.markdown(f"   - **Insertion point:** {placement['insertion_point']}")
             st.markdown(f"**Why this location:** {payload['why']}")
             st.markdown("**Light edit**")
             payload["light_edit"] = st.text_area(
-                f"{competency} light edit",
+                f"{competency_key} light edit",
                 value=payload["light_edit"],
-                key=f"light_{competency}",
+                key=f"light_{competency_key}",
                 height=90,
             )
             st.markdown("**Strong integration**")
             payload["strong_edit"] = st.text_area(
-                f"{competency} strong edit",
+                f"{competency_key} strong edit",
                 value=payload["strong_edit"],
-                key=f"strong_{competency}",
+                key=f"strong_{competency_key}",
                 height=120,
             )
 
@@ -255,13 +281,14 @@ def step_5_review_export() -> None:
         st.text_area("Revised", revised_text, height=280)
 
     report_rows = []
-    for competency, result in st.session_state.analysis.items():
+    for competency_key, result in st.session_state.analysis.items():
         report_rows.append(
             {
-                "competency": competency,
+                "competency": result["name"],
                 "score": result["score"],
                 "level": result["level"],
-                "selected_for_improvement": competency in st.session_state.selected_competencies,
+                "selected_for_improvement": competency_key in st.session_state.selected_competencies,
+                "missing_summary": result["missing_explanation"],
             }
         )
     st.markdown("### NACE alignment summary")

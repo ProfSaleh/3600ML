@@ -257,10 +257,12 @@ def step_3_evidence_select() -> None:
                     st.markdown(
                         f"   - **Quality diagnostics:** {evidence.get('quality_diagnostics', 'N/A')}"
                     )
+                    if evidence.get("quality_gap"):
+                        st.markdown(f"   - **Quality gap to improve:** {evidence['quality_gap']}")
                     st.code(evidence["excerpt"], language="text")
-                    if evidence.get("exemplar"):
+                    if evidence.get("great_example_reference"):
                         st.markdown("   - **Great example to emulate:**")
-                        st.code(evidence["exemplar"], language="text")
+                        st.code(evidence["great_example_reference"], language="text")
             else:
                 st.markdown("- No direct evidence found in this syllabus text.")
             selected = st.checkbox(
@@ -325,6 +327,13 @@ def step_4_recommendations() -> None:
                 st.markdown("**Weekly breakdown edits (priority)**")
                 for weekly_suggestion in payload["weekly_task_suggestions"]:
                     st.markdown(f"- {weekly_suggestion}")
+            if payload.get("great_example_reference"):
+                st.markdown("**Great example to emulate**")
+                st.code(payload["great_example_reference"], language="text")
+            if payload.get("exemplar_rewrites"):
+                st.markdown("**Exemplar-driven rewrites (assignment-ready)**")
+                for rewrite in payload["exemplar_rewrites"]:
+                    st.code(rewrite, language="text")
             st.markdown("**Light edit**")
             payload["light_edit"] = st.text_area(
                 f"{competency_key} light edit",

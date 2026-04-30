@@ -340,6 +340,38 @@ QUALITY_SIGNAL_TERMS = {
 }
 
 
+def _detect_quality_signals(excerpt: str) -> List[str]:
+    excerpt_lc = excerpt.lower()
+    signals: List[str] = []
+    for label, terms in QUALITY_SIGNAL_TERMS.items():
+        if any(term in excerpt_lc for term in terms):
+            signals.append(label)
+    return signals
+
+
+def _quality_signal_summary(signals: List[str]) -> str:
+    if not signals:
+        return "No strong assignment-quality markers detected."
+    labels = ", ".join(signals[:3])
+    return f"Quality markers detected: {labels}."
+
+
+def _quality_gap_text(signals: List[str]) -> str:
+    if len(signals) >= 3:
+        return "Evidence quality is strong and close to exemplar quality."
+    if len(signals) == 2:
+        return "Good start; add one more measurable rubric or deliverable detail."
+    return "Needs stronger measurable language, deliverable clarity, or rubric criteria."
+
+
+def _rewrite_activity_line(original_line: str, suggestion_stem: str, competency_name: str) -> str:
+    clean = original_line.rstrip(".")
+    return (
+        f"Original: {clean}\n"
+        f"Improved: {clean}; {suggestion_stem} This explicitly assesses {competency_name}."
+    )
+
+
 def _score_from_hits(hit_count: int) -> str:
     if hit_count >= 6:
         return "High"
@@ -433,7 +465,7 @@ def _source_type(section_name: str, excerpt: str) -> str:
 
 
 def _build_competency_evidence(
-    competency: CompetencyDefinition, sections: Dict[str, str]
+    competency_key: str, competency: CompetencyDefinition, sections: Dict[str, str]
 ) -> tuple[int, List[str], List[dict]]:
     matched_indicators: List[str] = []
     evidence_pool: List[dict] = []
@@ -461,6 +493,8 @@ def _build_competency_evidence(
             strength = _evidence_strength(len(matches), excerpt)
             source = _source_type(section_name, excerpt)
             week_label = _extract_week_label(excerpt)
+            quality_signals = _detect_quality_signals(excerpt)
+            exemplar = EXEMPLAR_LIBRARY.get(competency_key, {})
             evidence_pool.append(
                 {
                     "section": section_name,
@@ -470,15 +504,29 @@ def _build_competency_evidence(
                     "strength": strength,
                     "source_type": source,
                     "week_label": week_label,
+                    "quality_signals": quality_signals,
+                    "quality_score": len(quality_signals),
+                    "quality_gap": _quality_gap_text(quality_signals),
+                    "example_alignment": (
+                        "Aligned with strong exemplar language."
+                        if len(quality_signals) >= 2
+                        else "Partially aligned; strengthen measurable language."
+                    ),
                     "reason": (
                         f"Mentions {len(matches)} competency keyword(s): {', '.join(matches[:3])}. "
-                        f"Source priority: {source}."
+                        f"Source priority: {source}. {_quality_signal_summary(quality_signals)}"
                     ),
+                    "great_example_reference": exemplar.get("strong_evidence_example", ""),
+                    "missing_signal_examples": exemplar.get("suggestion_stem", ""),
                 }
             )
 
     evidence_pool.sort(
-        key=lambda item: (_strength_rank(item["strength"]), item["match_count"]),
+        key=lambda item: (
+            _strength_rank(item["strength"]),
+            item["quality_score"],
+            item["match_count"],
+        ),
         reverse=True,
     )
     evidence = evidence_pool[:3]
@@ -720,7 +768,7 @@ def evaluate_syllabus(
     ).lower()
 
     for key, competency in COMPETENCIES.items():
-        hits, matched_indicators, evidence = _build_competency_evidence(competency, sections)
+        hits, matched_indicators, evidence = _build_competency_evidence(key, competency, sections)
         weekly_indicator_hits = sum(
             1 for indicator in competency.indicators if indicator in weekly_activity_text_lc
         )
@@ -749,6 +797,8 @@ def evaluate_syllabus(
             f"Activity evidence matches for this competency: {evidence_weekly_count}. "
             "Add explicit assignment/assessment tasks if this is low."
         )
+        exemplar = EXEMPLAR_LIBRARY.get(key, {})
+        great_examples = [exemplar["strong_evidence_example"]] if exemplar.get("strong_evidence_example") else []
 
         results[key] = {
             "name": competency.name,
@@ -778,6 +828,7 @@ def evaluate_syllabus(
             "analysis_flow": analysis_notes,
             "analysis_mode": "assignment" if assignment_mode else "syllabus",
             "assignment_mode": assignment_mode,
+            "great_examples": great_examples,
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -801,6 +852,7 @@ def generate_recommendations(
     activity_lines = _collect_activity_lines(sections, assignment_mode=assignment_mode)
     for key in selected_competencies:
         definition = COMPETENCIES[key]
+        exemplar = EXEMPLAR_LIBRARY.get(key, {})
         placements = []
         for target_label in definition.placement_targets:
             plan = _insertion_plan(target_label, sections)
@@ -825,10 +877,30 @@ def generate_recommendations(
                     "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
                     "Add a graded milestone in weekly schedule tied to this competency.",
                 ]
+        exemplar_rewrites: List[str] = []
+        if activity_lines:
+            for line in activity_lines[:3]:
+                exemplar_rewrites.append(
+                    _rewrite_activity_line(
+                        line,
+                        exemplar.get("suggestion_stem", definition.light_template),
+                        definition.name,
+                    )
+                )
+        else:
+            exemplar_rewrites.append(
+                _rewrite_activity_line(
+                    "Week X Assignment: [add task]",
+                    exemplar.get("suggestion_stem", definition.light_template),
+                    definition.name,
+                )
+            )
         recommendations[key] = {
             "name": definition.name,
             "placements": placements,
             "weekly_task_suggestions": weekly_task_suggestions,
+            "exemplar_rewrites": exemplar_rewrites,
+            "great_example_reference": exemplar.get("strong_evidence_example", ""),
             "why": (
                 "These sections are where this competency is usually made explicit. "
                 "Weekly tasks are prioritized so competency evidence is visible in day-to-day coursework."

@@ -55,6 +55,14 @@ def score_badge(level: str, score: int) -> str:
     return f"{score_color(level)} {level} ({score}/100)"
 
 
+def evidence_strength_badge(strength: str) -> str:
+    if strength == "Strong":
+        return "🟢 Strong"
+    if strength == "Moderate":
+        return "🟡 Moderate"
+    return "🔵 Supporting"
+
+
 def render_header() -> None:
     st.title("NACE Competency Syllabus Assistant (MVP)")
     st.caption(
@@ -175,8 +183,16 @@ def step_3_evidence_select() -> None:
             st.caption(result["recommended_focus"])
             st.markdown("**Evidence found**")
             if result["evidence"]:
-                for snippet in result["evidence"]:
-                    st.markdown(f"- `{snippet}`")
+                for idx, evidence in enumerate(result["evidence"], start=1):
+                    st.markdown(
+                        f"{idx}. **Section:** `{evidence['section']}` "
+                        f"| **Matched term:** `{evidence['indicator']}` "
+                        f"| **Strength:** {evidence_strength_badge(evidence['strength'])}"
+                    )
+                    st.markdown(
+                        f"   - **Why this matters:** {evidence['reason']}"
+                    )
+                    st.code(evidence["excerpt"], language="text")
             else:
                 st.markdown("- No direct evidence found in this syllabus text.")
             selected = st.checkbox(

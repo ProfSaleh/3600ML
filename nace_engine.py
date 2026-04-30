@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Dict, List
 
@@ -229,6 +230,98 @@ def _preview(text: str, max_len: int = 200) -> str:
     return cleaned[: max_len - 3].rstrip() + "..."
 
 
+def _split_evidence_units(text: str) -> List[str]:
+    parts = re.split(r"(?<=[.!?])\s+|\n+", text)
+    units: List[str] = []
+    for part in parts:
+        cleaned = part.strip(" -\t")
+        if len(cleaned) >= 20:
+            units.append(cleaned)
+    return units
+
+
+def _strength_rank(label: str) -> int:
+    if label == "Strong":
+        return 3
+    if label == "Moderate":
+        return 2
+    return 1
+
+
+def _evidence_strength(match_count: int, excerpt: str) -> str:
+    action_terms = (
+        "students will",
+        "assess",
+        "evaluate",
+        "analyze",
+        "present",
+        "create",
+        "develop",
+        "apply",
+        "submit",
+        "design",
+        "collaborate",
+        "reflect",
+        "rubric",
+        "graded",
+    )
+    excerpt_lc = excerpt.lower()
+    has_action = any(term in excerpt_lc for term in action_terms)
+    if match_count >= 2 or (match_count >= 1 and has_action):
+        return "Strong"
+    if match_count == 1:
+        return "Moderate"
+    return "Low"
+
+
+def _build_competency_evidence(
+    competency: CompetencyDefinition, sections: Dict[str, str]
+) -> tuple[int, List[str], List[dict]]:
+    matched_indicators: List[str] = []
+    evidence_pool: List[dict] = []
+    seen_excerpts = set()
+
+    for section_name, section_text in sections.items():
+        if not section_text:
+            continue
+        for excerpt in _split_evidence_units(section_text):
+            excerpt_lc = excerpt.lower()
+            matches = [indicator for indicator in competency.indicators if indicator in excerpt_lc]
+            if not matches:
+                continue
+
+            for indicator in matches:
+                if indicator not in matched_indicators:
+                    matched_indicators.append(indicator)
+
+            preview = _preview(excerpt, 260)
+            dedupe_key = (section_name, preview.lower())
+            if dedupe_key in seen_excerpts:
+                continue
+            seen_excerpts.add(dedupe_key)
+
+            strength = _evidence_strength(len(matches), excerpt)
+            evidence_pool.append(
+                {
+                    "section": section_name,
+                    "excerpt": preview,
+                    "indicator": matches[0],
+                    "match_count": len(matches),
+                    "strength": strength,
+                    "reason": (
+                        f"Mentions {len(matches)} competency keyword(s): {', '.join(matches[:3])}."
+                    ),
+                }
+            )
+
+    evidence_pool.sort(
+        key=lambda item: (_strength_rank(item["strength"]), item["match_count"]),
+        reverse=True,
+    )
+    evidence = evidence_pool[:3]
+    return len(matched_indicators), matched_indicators, evidence
+
+
 def _missing_explanation(hit_count: int, competency_name: str) -> str:
     if hit_count == 0:
         return (
@@ -298,29 +391,10 @@ def _copy_ready_text(definition: CompetencyDefinition, target_label: str) -> str
 
 
 def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dict]:
-    full_text = "\n".join(sections.values()).lower()
-    section_lc = {name: content.lower() for name, content in sections.items()}
-    section_original = {name: content for name, content in sections.items()}
-
     results: Dict[str, dict] = {}
 
     for key, competency in COMPETENCIES.items():
-        hits = 0
-        matched_indicators: List[str] = []
-        evidence: List[str] = []
-
-        for indicator in competency.indicators:
-            if indicator in full_text:
-                hits += 1
-                matched_indicators.append(indicator)
-                if len(evidence) < 3:
-                    for section_name, content in section_lc.items():
-                        if indicator in content:
-                            original_snippet = section_original[section_name]
-                            evidence.append(
-                                f"[{section_name}] indicator '{indicator}': {_preview(original_snippet)}"
-                            )
-                            break
+        hits, matched_indicators, evidence = _build_competency_evidence(competency, sections)
 
         level = _score_from_hits(hits)
         score = _numeric_score(hits)

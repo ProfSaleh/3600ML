@@ -43,6 +43,12 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert "critical_thinking" in analysis
     assert analysis["communication"]["score"] >= 20
     assert analysis["communication"]["level"] in {"Low", "Medium", "High"}
+    assert analysis["communication"]["evidence"]
+    evidence_item = analysis["communication"]["evidence"][0]
+    assert "section" in evidence_item
+    assert "excerpt" in evidence_item
+    assert "reason" in evidence_item
+    assert evidence_item["strength"] in {"Strong", "Moderate"}
 
 
 def test_recommendation_and_render_pipeline():

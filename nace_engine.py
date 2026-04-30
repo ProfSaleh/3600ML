@@ -408,12 +408,21 @@ def _contains_task_marker(excerpt: str) -> bool:
 
 def _collect_weekly_lines(sections: Dict[str, str]) -> List[str]:
     weekly_lines: List[str] = []
-    weekly_text = sections.get("Weekly Schedule", "")
-    if weekly_text:
-        for line in weekly_text.split("\n"):
+    seen = set()
+    for section_name in ("Weekly Schedule", "Assignments", "Assessment"):
+        section_text = sections.get(section_name, "")
+        if not section_text:
+            continue
+        for line in section_text.split("\n"):
             cleaned = line.strip(" -\t")
-            if cleaned:
+            if not cleaned:
+                continue
+            cleaned_lc = cleaned.lower()
+            if cleaned_lc in seen:
+                continue
+            if section_name == "Weekly Schedule" or _contains_task_marker(cleaned):
                 weekly_lines.append(cleaned)
+                seen.add(cleaned_lc)
     return weekly_lines
 
 
@@ -548,12 +557,18 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
     weekly_lines = _collect_weekly_lines(sections)
     weekly_summary = _weekly_overview(weekly_lines)
     analysis_notes = _build_analysis_notes(sections, weekly_lines)
-    weekly_text_lc = sections.get("Weekly Schedule", "").lower()
+    weekly_activity_text_lc = "\n".join(
+        [
+            sections.get("Weekly Schedule", ""),
+            sections.get("Assignments", ""),
+            sections.get("Assessment", ""),
+        ]
+    ).lower()
 
     for key, competency in COMPETENCIES.items():
         hits, matched_indicators, evidence = _build_competency_evidence(competency, sections)
         weekly_indicator_hits = sum(
-            1 for indicator in competency.indicators if indicator in weekly_text_lc
+            1 for indicator in competency.indicators if indicator in weekly_activity_text_lc
         )
         evidence_weekly_count = sum(
             1 for item in evidence if _is_weekly_content(item["excerpt"])

@@ -50,6 +50,8 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert analysis["communication"]["evidence"]
     assert analysis["communication"]["weekly_focus"]["has_weekly_items"] is True
     assert "week" in analysis["communication"]["weekly_focus"]["summary"].lower()
+    assert analysis["communication"]["weekly_focus"]["activity_lines_found"] >= 4
+    assert analysis["communication"]["activity_indicator_hits"] >= 1
     evidence_item = analysis["communication"]["evidence"][0]
     assert "section" in evidence_item
     assert "excerpt" in evidence_item
@@ -68,6 +70,7 @@ def test_recommendation_and_render_pipeline():
     assert "technology" in recommendations
     assert recommendations["communication"]["name"] == "Communication"
     assert recommendations["technology"]["name"] == "Technology"
+    assert recommendations["communication"]["weekly_task_suggestions"]
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,

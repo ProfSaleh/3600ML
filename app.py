@@ -84,7 +84,7 @@ def parse_and_analyze(text: str) -> None:
 
 def assessment_focus_badge(source: str) -> str:
     if source == "weekly":
-        return "🗓️ Weekly breakdown evidence (primary)"
+        return "🗓️ Weekly/assignment/assessment evidence (primary)"
     if source == "foundational":
         return "📘 Course outcomes/description evidence"
     return "📄 General syllabus evidence"

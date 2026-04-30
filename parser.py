@@ -12,6 +12,14 @@ from pypdf import PdfReader
 
 
 SECTION_ALIASES = {
+    "Course Description": [
+        "course description",
+        "description",
+        "catalog description",
+        "about this course",
+        "course overview",
+        "overview",
+    ],
     "Learning Outcomes": [
         "learning outcomes",
         "course outcomes",
@@ -98,6 +106,7 @@ def split_into_sections(text: str) -> SectionMap:
     text = _normalize_text(text)
     sections: "OrderedDict[str, List[str]]" = OrderedDict(
         (
+            ("Course Description", []),
             ("Learning Outcomes", []),
             ("Assignments", []),
             ("Weekly Schedule", []),
@@ -140,3 +149,65 @@ def sentence_list(text: str) -> List[str]:
     """Return non-empty sentence candidates for evidence extraction."""
     pieces = re.split(r"(?<=[.!?])\s+|\n+", text)
     return [piece.strip() for piece in pieces if piece.strip()]
+
+
+def extract_weekly_breakdown(sections: SectionMap) -> List[dict]:
+    """
+    Extract assignment/activity lines with week/module context.
+    Prioritizes Weekly Schedule, Assignments, and Assessment sections.
+    """
+    weekly_sources = ["Weekly Schedule", "Assignments", "Assessment", "General"]
+    activity_keywords = [
+        "assignment",
+        "discussion",
+        "dq",
+        "quiz",
+        "exam",
+        "project",
+        "presentation",
+        "lab",
+        "reflection",
+        "paper",
+        "report",
+    ]
+    week_pattern = re.compile(r"\b(week|module|unit)\s*\d+\b", re.IGNORECASE)
+    seen = set()
+    items: List[dict] = []
+
+    for section_name in weekly_sources:
+        content = sections.get(section_name, "")
+        if not content:
+            continue
+        for raw_line in content.split("\n"):
+            line = raw_line.strip(" -\t")
+            if len(line) < 10:
+                continue
+            line_lc = line.lower()
+            has_activity = any(word in line_lc for word in activity_keywords)
+            has_week = bool(week_pattern.search(line))
+            if not (has_activity or has_week):
+                continue
+            norm = line_lc
+            if norm in seen:
+                continue
+            seen.add(norm)
+
+            week_match = week_pattern.search(line)
+            week_label = week_match.group(0).title() if week_match else section_name
+
+            activity_type = "activity"
+            for keyword in activity_keywords:
+                if keyword in line_lc:
+                    activity_type = keyword
+                    break
+
+            items.append(
+                {
+                    "section": section_name,
+                    "week_label": week_label,
+                    "activity_type": activity_type,
+                    "line": line,
+                }
+            )
+
+    return items[:60]

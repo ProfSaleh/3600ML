@@ -82,6 +82,14 @@ def parse_and_analyze(text: str) -> None:
     st.session_state.selected_competencies = []
 
 
+def assessment_focus_badge(source: str) -> str:
+    if source == "weekly":
+        return "🗓️ Weekly breakdown evidence (primary)"
+    if source == "foundational":
+        return "📘 Course outcomes/description evidence"
+    return "📄 General syllabus evidence"
+
+
 def step_1_upload() -> None:
     st.subheader("Step 1: Upload or paste syllabus")
     left, right = st.columns(2)
@@ -126,8 +134,35 @@ def step_2_scorecard() -> None:
 
     st.subheader("Step 2: NACE competency scorecard")
     analysis: Dict[str, dict] = st.session_state.analysis
+    meta = analysis.get("_analysis_meta", {})
+    stage_notes = meta.get("analysis_notes", {})
+    weekly_summary = meta.get("weekly_summary", {})
+    if stage_notes:
+        st.markdown("### How this analysis was performed")
+        stage1 = stage_notes.get("stage_1", {})
+        stage2 = stage_notes.get("stage_2", {})
+        st.info(
+            f"1) {stage1.get('summary', '')}\n\n"
+            f"2) {stage2.get('summary', '')}"
+        )
+    if weekly_summary:
+        coverage = weekly_summary.get("coverage", "Low")
+        coverage_badge = (
+            "🟢 Weekly task detail is strong"
+            if coverage == "High"
+            else "🟡 Weekly task detail is moderate"
+            if coverage == "Medium"
+            else "🔴 Weekly task detail is weak"
+        )
+        st.caption(coverage_badge + f" — {weekly_summary.get('summary', '')}")
+
+    competency_items = [
+        (key, value)
+        for key, value in analysis.items()
+        if not key.startswith("_")
+    ]
     cols = st.columns(2)
-    for idx, (name, result) in enumerate(analysis.items()):
+    for idx, (name, result) in enumerate(competency_items):
         with cols[idx % 2]:
             level = result["level"]
             score = result["score"]
@@ -145,7 +180,7 @@ def step_2_scorecard() -> None:
             else:
                 st.success("This competency has clear evidence in your syllabus.")
 
-    missing = [v["name"] for v in analysis.values() if v["level"] == "Low"]
+    missing = [v["name"] for _, v in competency_items if v["level"] == "Low"]
     if missing:
         st.error(
             "Competencies that need attention: " + ", ".join(missing),
@@ -174,13 +209,23 @@ def step_3_evidence_select() -> None:
     analysis: Dict[str, dict] = st.session_state.analysis
     selections: List[str] = st.session_state.selected_competencies[:]
 
-    for competency_key, result in analysis.items():
+    competency_items = [
+        (key, value)
+        for key, value in analysis.items()
+        if not key.startswith("_")
+    ]
+    for competency_key, result in competency_items:
         competency_name = result["name"]
         with st.container(border=True):
             st.markdown(f"### {competency_name}")
             st.markdown(f"**Coverage:** {score_badge(result['level'], result['score'])}")
             st.write(result["missing_explanation"])
             st.caption(result["recommended_focus"])
+            weekly_focus = result.get("weekly_focus", {})
+            if weekly_focus:
+                st.markdown(
+                    f"**Weekly-first assessment:** {weekly_focus.get('summary', '')}"
+                )
             st.markdown("**Evidence found**")
             if result["evidence"]:
                 for idx, evidence in enumerate(result["evidence"], start=1):
@@ -188,6 +233,9 @@ def step_3_evidence_select() -> None:
                         f"{idx}. **Section:** `{evidence['section']}` "
                         f"| **Matched term:** `{evidence['indicator']}` "
                         f"| **Strength:** {evidence_strength_badge(evidence['strength'])}"
+                    )
+                    st.markdown(
+                        f"   - **Source priority:** {assessment_focus_badge(evidence.get('source_type', 'general'))}"
                     )
                     st.markdown(
                         f"   - **Why this matters:** {evidence['reason']}"
@@ -249,7 +297,13 @@ def step_4_recommendations() -> None:
                 )
                 st.markdown(f"   - **Instruction:** {placement['exact_location']}")
                 st.markdown(f"   - **Insertion point:** {placement['insertion_point']}")
+                st.markdown(f"   - **Copy-ready text:**")
+                st.code(placement["copy_ready_text"], language="text")
             st.markdown(f"**Why this location:** {payload['why']}")
+            if payload.get("weekly_task_suggestions"):
+                st.markdown("**Weekly breakdown edits (priority)**")
+                for weekly_suggestion in payload["weekly_task_suggestions"]:
+                    st.markdown(f"- {weekly_suggestion}")
             st.markdown("**Light edit**")
             payload["light_edit"] = st.text_area(
                 f"{competency_key} light edit",
@@ -298,6 +352,8 @@ def step_5_review_export() -> None:
 
     report_rows = []
     for competency_key, result in st.session_state.analysis.items():
+        if competency_key.startswith("_"):
+            continue
         report_rows.append(
             {
                 "competency": result["name"],

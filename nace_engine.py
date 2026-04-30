@@ -194,6 +194,47 @@ COMPETENCIES: Dict[str, CompetencyDefinition] = {
 }
 
 
+WEEKLY_KEYWORDS = (
+    "week",
+    "module",
+    "unit",
+    "assignment",
+    "discussion",
+    "dq",
+    "quiz",
+    "exam",
+    "project",
+    "lab",
+    "presentation",
+)
+
+TASK_KEYWORDS = (
+    "assignment",
+    "discussion",
+    "dq",
+    "quiz",
+    "exam",
+    "project",
+    "paper",
+    "report",
+    "presentation",
+    "lab",
+    "reflection",
+)
+
+WEEKLY_SOURCE_SECTIONS = {"Weekly Schedule", "Assignments", "Assessment"}
+
+SECTION_PRIORITY = [
+    "Weekly Schedule",
+    "Assignments",
+    "Assessment",
+    "Learning Outcomes",
+    "Course Description",
+    "General",
+    "Policies",
+]
+
+
 PLACEMENT_SECTION_MAP = {
     "Learning Outcomes": "Learning Outcomes",
     "Assignments": "Assignments",
@@ -240,6 +281,19 @@ def _split_evidence_units(text: str) -> List[str]:
     return units
 
 
+def _ordered_sections(sections: Dict[str, str]) -> List[tuple[str, str]]:
+    seen = set()
+    ordered: List[tuple[str, str]] = []
+    for section_name in SECTION_PRIORITY:
+        if section_name in sections:
+            ordered.append((section_name, sections.get(section_name, "")))
+            seen.add(section_name)
+    for section_name, value in sections.items():
+        if section_name not in seen:
+            ordered.append((section_name, value))
+    return ordered
+
+
 def _strength_rank(label: str) -> int:
     if label == "Strong":
         return 3
@@ -274,6 +328,21 @@ def _evidence_strength(match_count: int, excerpt: str) -> str:
     return "Low"
 
 
+def _extract_week_label(text: str) -> str | None:
+    match = re.search(r"\b(week|module|unit)\s*\d+\b", text, flags=re.IGNORECASE)
+    if match:
+        return match.group(0).title()
+    return None
+
+
+def _source_type(section_name: str, excerpt: str) -> str:
+    if section_name in WEEKLY_SOURCE_SECTIONS or _is_weekly_content(excerpt):
+        return "weekly"
+    if section_name in {"Learning Outcomes", "Course Description"}:
+        return "course-level"
+    return "general"
+
+
 def _build_competency_evidence(
     competency: CompetencyDefinition, sections: Dict[str, str]
 ) -> tuple[int, List[str], List[dict]]:
@@ -281,7 +350,7 @@ def _build_competency_evidence(
     evidence_pool: List[dict] = []
     seen_excerpts = set()
 
-    for section_name, section_text in sections.items():
+    for section_name, section_text in _ordered_sections(sections):
         if not section_text:
             continue
         for excerpt in _split_evidence_units(section_text):
@@ -301,6 +370,8 @@ def _build_competency_evidence(
             seen_excerpts.add(dedupe_key)
 
             strength = _evidence_strength(len(matches), excerpt)
+            source = _source_type(section_name, excerpt)
+            week_label = _extract_week_label(excerpt)
             evidence_pool.append(
                 {
                     "section": section_name,
@@ -308,8 +379,11 @@ def _build_competency_evidence(
                     "indicator": matches[0],
                     "match_count": len(matches),
                     "strength": strength,
+                    "source_type": source,
+                    "week_label": week_label,
                     "reason": (
-                        f"Mentions {len(matches)} competency keyword(s): {', '.join(matches[:3])}."
+                        f"Mentions {len(matches)} competency keyword(s): {', '.join(matches[:3])}. "
+                        f"Source priority: {source}."
                     ),
                 }
             )
@@ -320,6 +394,85 @@ def _build_competency_evidence(
     )
     evidence = evidence_pool[:3]
     return len(matched_indicators), matched_indicators, evidence
+
+
+def _is_weekly_content(excerpt: str) -> bool:
+    excerpt_lc = excerpt.lower()
+    return any(keyword in excerpt_lc for keyword in WEEKLY_KEYWORDS)
+
+
+def _contains_task_marker(excerpt: str) -> bool:
+    excerpt_lc = excerpt.lower()
+    return any(keyword in excerpt_lc for keyword in TASK_KEYWORDS)
+
+
+def _collect_weekly_lines(sections: Dict[str, str]) -> List[str]:
+    weekly_lines: List[str] = []
+    weekly_text = sections.get("Weekly Schedule", "")
+    if weekly_text:
+        for line in weekly_text.split("\n"):
+            cleaned = line.strip(" -\t")
+            if cleaned:
+                weekly_lines.append(cleaned)
+    return weekly_lines
+
+
+def _weekly_overview(weekly_lines: List[str]) -> dict:
+    if not weekly_lines:
+        return {
+            "line_count": 0,
+            "task_like_count": 0,
+            "coverage": "Low",
+            "summary": (
+                "Weekly breakdown was not clearly detected. Add week-by-week assignment "
+                "or activity lines (e.g., DQ, quiz, project milestone)."
+            ),
+        }
+    task_like = [line for line in weekly_lines if _contains_task_marker(line)]
+    if len(task_like) >= 6:
+        coverage = "High"
+    elif len(task_like) >= 3:
+        coverage = "Medium"
+    else:
+        coverage = "Low"
+    summary = (
+        f"Detected {len(weekly_lines)} weekly lines; {len(task_like)} include concrete "
+        "tasks (assignments, discussions, quizzes, exams, or projects)."
+    )
+    return {
+        "line_count": len(weekly_lines),
+        "task_like_count": len(task_like),
+        "coverage": coverage,
+        "summary": summary,
+    }
+
+
+def _build_analysis_notes(sections: Dict[str, str], weekly_lines: List[str]) -> dict:
+    outcomes_present = bool(sections.get("Learning Outcomes", "").strip())
+    description_present = bool(
+        sections.get("Course Description", "").strip()
+        or sections.get("General", "").strip()
+    )
+    weekly_present = bool(weekly_lines)
+    return {
+        "stage_1": {
+            "title": "Stage 1: Outcomes and course framing",
+            "summary": (
+                "Reviewed course outcomes/description first to identify declared learning goals."
+            ),
+            "outcomes_found": outcomes_present,
+            "description_found": description_present,
+        },
+        "stage_2": {
+            "title": "Stage 2: Weekly breakdown and task evidence",
+            "summary": (
+                "Primary scoring emphasis is based on weekly tasks (assignments, DQs, quizzes, "
+                "exams, projects, labs, and presentations)."
+            ),
+            "weekly_found": weekly_present,
+            "weekly_line_count": len(weekly_lines),
+        },
+    }
 
 
 def _missing_explanation(hit_count: int, competency_name: str) -> str:
@@ -392,21 +545,37 @@ def _copy_ready_text(definition: CompetencyDefinition, target_label: str) -> str
 
 def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dict]:
     results: Dict[str, dict] = {}
+    weekly_lines = _collect_weekly_lines(sections)
+    weekly_summary = _weekly_overview(weekly_lines)
+    analysis_notes = _build_analysis_notes(sections, weekly_lines)
+    weekly_text_lc = sections.get("Weekly Schedule", "").lower()
 
     for key, competency in COMPETENCIES.items():
         hits, matched_indicators, evidence = _build_competency_evidence(competency, sections)
+        weekly_indicator_hits = sum(
+            1 for indicator in competency.indicators if indicator in weekly_text_lc
+        )
+        evidence_weekly_count = sum(
+            1 for item in evidence if _is_weekly_content(item["excerpt"])
+        )
+        weighted_hits = hits + weekly_indicator_hits + evidence_weekly_count
+        weighted_hits = min(weighted_hits, len(competency.indicators))
 
-        level = _score_from_hits(hits)
-        score = _numeric_score(hits)
+        level = _score_from_hits(weighted_hits)
+        score = _numeric_score(weighted_hits)
         missing = level == "Low"
         rationale = (
-            f"Detected {hits} competency indicators ({', '.join(matched_indicators[:5]) or 'none found'}), "
-            f"which maps to a {level} coverage rating."
+            f"Detected {hits} indicators overall and {weekly_indicator_hits} within weekly breakdown, "
+            f"resulting in a {level} coverage rating with weekly emphasis."
         )
         if missing:
             rationale += " Coverage is weak or missing and needs explicit measurable language."
 
-        confidence = "High" if hits >= 5 else "Medium" if hits >= 2 else "Low"
+        confidence = "High" if weighted_hits >= 5 else "Medium" if weighted_hits >= 2 else "Low"
+        weekly_priority_note = (
+            f"Weekly evidence matches for this competency: {evidence_weekly_count}. "
+            "Add explicit weekly tasks if this is low."
+        )
 
         results[key] = {
             "name": competency.name,
@@ -414,12 +583,23 @@ def evaluate_syllabus(_raw_text: str, sections: Dict[str, str]) -> Dict[str, dic
             "score": score,
             "level": level,
             "missing_or_weak": missing,
-            "indicator_hits": hits,
+            "indicator_hits": weighted_hits,
+            "raw_indicator_hits": hits,
+            "weekly_indicator_hits": weekly_indicator_hits,
             "matched_indicators": matched_indicators,
             "confidence": confidence,
             "rationale": rationale,
             "missing_explanation": _missing_explanation(hits, competency.name),
             "recommended_focus": _focus_action(competency),
+            "weekly_priority_note": weekly_priority_note,
+            "weekly_focus": {
+                "has_weekly_items": bool(weekly_lines),
+                "weekly_lines_found": weekly_summary["line_count"],
+                "task_items_found": weekly_summary["task_like_count"],
+                "competency_weekly_matches": evidence_weekly_count,
+                "summary": weekly_summary["summary"],
+            },
+            "analysis_flow": analysis_notes,
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -435,6 +615,7 @@ def generate_recommendations(
     sections: Dict[str, str], selected_competencies: List[str]
 ) -> Dict[str, dict]:
     recommendations: Dict[str, dict] = {}
+    weekly_lines = _collect_weekly_lines(sections)
     for key in selected_competencies:
         definition = COMPETENCIES[key]
         placements = []
@@ -442,12 +623,26 @@ def generate_recommendations(
             plan = _insertion_plan(target_label, sections)
             plan["copy_ready_text"] = _copy_ready_text(definition, target_label)
             placements.append(plan)
+        weekly_task_suggestions: List[str] = []
+        for line in weekly_lines[:10]:
+            if _contains_task_marker(line):
+                weekly_task_suggestions.append(
+                    f"{line}\nSuggested addition: {definition.light_template}"
+                )
+            if len(weekly_task_suggestions) >= 3:
+                break
+        if not weekly_task_suggestions:
+            weekly_task_suggestions = [
+                "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
+                "Add a graded milestone in weekly schedule tied to this competency.",
+            ]
         recommendations[key] = {
             "name": definition.name,
             "placements": placements,
+            "weekly_task_suggestions": weekly_task_suggestions,
             "why": (
-                "These sections are where this competency is usually made explicit "
-                "and assessable in a syllabus."
+                "These sections are where this competency is usually made explicit. "
+                "Weekly tasks are prioritized so competency evidence is visible in day-to-day coursework."
             ),
             "light_edit": definition.light_template,
             "strong_edit": definition.strong_template,

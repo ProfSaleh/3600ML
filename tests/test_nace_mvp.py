@@ -16,6 +16,10 @@ Group project with peer review and final written report.
 
 Weekly Schedule:
 Week 4: Team facilitation and reflection checkpoint.
+Week 5 Assignment: Submit policy memo with audience-specific communication.
+Week 6 DQ: Critique two sources and respond to classmates with evidence.
+Week 7 Quiz: Data interpretation and digital tool selection.
+Week 8 Project Milestone: Team leadership rotation and progress update.
 
 Grading Policy:
 Presentations are graded with a communication rubric and quality standards.
@@ -44,11 +48,14 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert analysis["communication"]["score"] >= 20
     assert analysis["communication"]["level"] in {"Low", "Medium", "High"}
     assert analysis["communication"]["evidence"]
+    assert analysis["communication"]["weekly_focus"]["has_weekly_items"] is True
+    assert "week" in analysis["communication"]["weekly_focus"]["summary"].lower()
     evidence_item = analysis["communication"]["evidence"][0]
     assert "section" in evidence_item
     assert "excerpt" in evidence_item
     assert "reason" in evidence_item
     assert evidence_item["strength"] in {"Strong", "Moderate"}
+    assert evidence_item["source_type"] in {"weekly", "course-level"}
 
 
 def test_recommendation_and_render_pipeline():

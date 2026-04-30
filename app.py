@@ -64,6 +64,14 @@ def evidence_strength_badge(strength: str) -> str:
     return "🔵 Supporting"
 
 
+def evidence_card_style(strength: str) -> str:
+    if strength == "Strong":
+        return "🟢"
+    if strength == "Moderate":
+        return "🟡"
+    return "🔵"
+
+
 def render_header() -> None:
     st.title("NACE Competency Syllabus Assistant (MVP)")
     st.caption(
@@ -240,11 +248,15 @@ def step_3_evidence_select() -> None:
                 st.markdown(
                     f"**Weekly-first assessment:** {weekly_focus.get('summary', '')}"
                 )
+            if result.get("great_examples"):
+                with st.expander("What strong evidence looks like", expanded=False):
+                    for sample in result["great_examples"]:
+                        st.code(sample, language="text")
             st.markdown("**Evidence found**")
             if result["evidence"]:
                 for idx, evidence in enumerate(result["evidence"], start=1):
                     st.markdown(
-                        f"{idx}. **Section:** `{evidence['section']}` "
+                        f"{idx}. {evidence_card_style(evidence['strength'])} **Section:** `{evidence['section']}` "
                         f"| **Matched term:** `{evidence['indicator']}` "
                         f"| **Strength:** {evidence_strength_badge(evidence['strength'])}"
                     )
@@ -260,6 +272,9 @@ def step_3_evidence_select() -> None:
                     if evidence.get("quality_gap"):
                         st.markdown(f"   - **Quality gap to improve:** {evidence['quality_gap']}")
                     st.code(evidence["excerpt"], language="text")
+                    if evidence.get("assignment_aligned_suggestion"):
+                        st.markdown("   - **Suggested revision for this exact line:**")
+                        st.code(evidence["assignment_aligned_suggestion"], language="text")
                     if evidence.get("great_example_reference"):
                         st.markdown("   - **Great example to emulate:**")
                         st.code(evidence["great_example_reference"], language="text")
@@ -324,9 +339,9 @@ def step_4_recommendations() -> None:
                 st.code(placement["copy_ready_text"], language="text")
             st.markdown(f"**Why this location:** {payload['why']}")
             if payload.get("weekly_task_suggestions"):
-                st.markdown("**Weekly breakdown edits (priority)**")
+                st.markdown("**Assignment-aligned suggestions (priority)**")
                 for weekly_suggestion in payload["weekly_task_suggestions"]:
-                    st.markdown(f"- {weekly_suggestion}")
+                    st.code(weekly_suggestion, language="text")
             if payload.get("great_example_reference"):
                 st.markdown("**Great example to emulate**")
                 st.code(payload["great_example_reference"], language="text")

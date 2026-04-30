@@ -339,6 +339,14 @@ QUALITY_SIGNAL_TERMS = {
     "feedback_or_iteration": ("feedback", "revise", "peer review", "revision"),
 }
 
+QUALITY_SIGNAL_LABELS = {
+    "measurable_verb": "measurable action verb",
+    "deliverable": "clear deliverable",
+    "assessment_criteria": "grading/rubric criteria",
+    "audience_or_context": "audience/context",
+    "feedback_or_iteration": "feedback or revision loop",
+}
+
 
 def _detect_quality_signals(excerpt: str) -> List[str]:
     excerpt_lc = excerpt.lower()
@@ -364,12 +372,102 @@ def _quality_gap_text(signals: List[str]) -> str:
     return "Needs stronger measurable language, deliverable clarity, or rubric criteria."
 
 
+def _missing_quality_signals(signals: List[str]) -> List[str]:
+    return [label for label in QUALITY_SIGNAL_TERMS if label not in signals]
+
+
+def _quality_signal_list(signals: List[str]) -> str:
+    if not signals:
+        return "none yet"
+    labels = [QUALITY_SIGNAL_LABELS.get(sig, sig.replace("_", " ")) for sig in signals]
+    return ", ".join(labels)
+
+
 def _rewrite_activity_line(original_line: str, suggestion_stem: str, competency_name: str) -> str:
     clean = original_line.rstrip(".")
     return (
         f"Original: {clean}\n"
         f"Improved: {clean}; {suggestion_stem} This explicitly assesses {competency_name}."
     )
+
+
+def _assignment_aligned_rewrite(
+    excerpt: str,
+    competency_name: str,
+    suggestion_stem: str,
+    missing_signals: List[str],
+) -> str:
+    clean = excerpt.rstrip(".")
+    missing_text = ""
+    if missing_signals:
+        missing_text = (
+            " Add missing quality markers: "
+            + _quality_signal_list(missing_signals)
+            + "."
+        )
+    return (
+        f"{clean}. {suggestion_stem}{missing_text} "
+        f"This line now directly measures {competency_name}."
+    )
+
+
+def _build_assignment_aligned_suggestions(
+    competency_key: str,
+    competency: CompetencyDefinition,
+    evidence_items: List[dict],
+    fallback_activity_lines: List[str],
+) -> List[dict]:
+    exemplar = EXEMPLAR_LIBRARY.get(competency_key, {})
+    suggestion_stem = exemplar.get("suggestion_stem", competency.light_template)
+    aligned: List[dict] = []
+
+    for evidence in evidence_items:
+        excerpt = evidence.get("excerpt", "").strip()
+        if not excerpt:
+            continue
+        present_signals = evidence.get("quality_signals", [])
+        missing_signals = _missing_quality_signals(present_signals)
+        aligned.append(
+            {
+                "source_location": f"{evidence.get('section', 'General')} | {evidence.get('week_label') or 'No week label'}",
+                "original_excerpt": excerpt,
+                "suggested_rewrite": _assignment_aligned_rewrite(
+                    excerpt,
+                    competency.name,
+                    suggestion_stem,
+                    missing_signals,
+                ),
+                "alignment_reason": (
+                    f"Matched '{evidence.get('indicator', 'keyword')}'. "
+                    f"Current quality markers: {_quality_signal_list(present_signals)}."
+                ),
+                "missing_signal_markers": missing_signals,
+            }
+        )
+        if len(aligned) >= 3:
+            break
+
+    if not aligned:
+        for line in fallback_activity_lines[:2]:
+            aligned.append(
+                {
+                    "source_location": "Assignment activity line",
+                    "original_excerpt": line,
+                    "suggested_rewrite": _assignment_aligned_rewrite(
+                        line,
+                        competency.name,
+                        suggestion_stem,
+                        ["assessment_criteria"],
+                    ),
+                    "alignment_reason": (
+                        "Generated from assignment activity line because no competency-specific "
+                        "evidence excerpt was detected."
+                    ),
+                    "missing_signal_markers": ["assessment_criteria"],
+                }
+            )
+
+    return aligned
 
 
 def _score_from_hits(hit_count: int) -> str:
@@ -846,13 +944,17 @@ def evaluate_syllabus(
 
 
 def generate_recommendations(
-    sections: Dict[str, str], selected_competencies: List[str], assignment_mode: bool = False
+    sections: Dict[str, str], selected_competencies: List[str], assignment_mode: bool = False,
+    analysis: Dict[str, dict] | None = None,
 ) -> Dict[str, dict]:
     recommendations: Dict[str, dict] = {}
     activity_lines = _collect_activity_lines(sections, assignment_mode=assignment_mode)
     for key in selected_competencies:
         definition = COMPETENCIES[key]
         exemplar = EXEMPLAR_LIBRARY.get(key, {})
+        evidence_items = []
+        if analysis and key in analysis:
+            evidence_items = analysis[key].get("evidence", [])
         placements = []
         for target_label in definition.placement_targets:
             plan = _insertion_plan(target_label, sections)
@@ -877,6 +979,9 @@ def generate_recommendations(
                     "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
                     "Add a graded milestone in weekly schedule tied to this competency.",
                 ]
+        aligned_suggestions = _build_assignment_aligned_suggestions(
+            key, definition, evidence_items, activity_lines
+        )
         exemplar_rewrites: List[str] = []
         if activity_lines:
             for line in activity_lines[:3]:
@@ -899,6 +1004,7 @@ def generate_recommendations(
             "name": definition.name,
             "placements": placements,
             "weekly_task_suggestions": weekly_task_suggestions,
+            "aligned_suggestions": aligned_suggestions,
             "exemplar_rewrites": exemplar_rewrites,
             "great_example_reference": exemplar.get("strong_evidence_example", ""),
             "why": (

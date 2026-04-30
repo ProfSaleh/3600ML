@@ -107,3 +107,21 @@ def test_assignment_mode_does_not_penalize_missing_syllabus_sections():
     assert analysis["_analysis_meta"]["assignment_mode"] is True
     assert analysis["communication"]["score"] >= 35
     assert analysis["communication"]["great_examples"]
+
+
+def test_suggestions_are_aligned_to_assignment_lines():
+    assignment_text = """
+    Assignment: Policy Communication Memo
+    - Submit a 2-page memo for a community audience.
+    - Quiz: Evaluate evidence reliability and explain your decision.
+    - DQ: Provide peer feedback on two classmates' drafts.
+    """
+    sections = split_into_sections(assignment_text)
+    recommendations = generate_recommendations(
+        sections, ["communication"], assignment_mode=True
+    )
+
+    rewrites = recommendations["communication"]["aligned_suggestions"]
+    assert rewrites
+    assert "source_location" in rewrites[0]
+    assert "suggested_rewrite" in rewrites[0]

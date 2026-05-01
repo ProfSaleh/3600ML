@@ -198,7 +198,6 @@ def step_2_scorecard() -> None:
             st.caption(result["description"])
             if result["missing_or_weak"]:
                 st.warning(result["missing_explanation"], icon="⚠️")
-                st.info(result["recommended_focus"], icon="🧭")
             else:
                 st.success("This competency has clear evidence in your syllabus.")
 
@@ -242,7 +241,6 @@ def step_3_evidence_select() -> None:
             st.markdown(f"### {competency_name}")
             st.markdown(f"**Coverage:** {score_badge(result['level'], result['score'])}")
             st.write(result["missing_explanation"])
-            st.caption(result["recommended_focus"])
             weekly_focus = result.get("weekly_focus", {})
             if weekly_focus:
                 st.markdown(
@@ -342,6 +340,21 @@ def step_4_recommendations() -> None:
                 st.markdown("**Assignment-aligned suggestions (priority)**")
                 for weekly_suggestion in payload["weekly_task_suggestions"]:
                     st.code(weekly_suggestion, language="text")
+            if payload.get("aligned_suggestions"):
+                st.markdown("**Directly aligned rewrites (from your assignment lines)**")
+                for aligned in payload["aligned_suggestions"]:
+                    st.markdown(
+                        f"- **Source line:** `{aligned['source_location']}`"
+                    )
+                    st.code(aligned["original_excerpt"], language="text")
+                    st.markdown("  **Improved rewrite:**")
+                    st.code(aligned["suggested_rewrite"], language="text")
+                    st.caption(aligned["alignment_reason"])
+                    if aligned.get("missing_signal_prompts"):
+                        st.markdown(
+                            "  **To make this even stronger:** "
+                            + "; ".join(aligned["missing_signal_prompts"])
+                        )
             if payload.get("great_example_reference"):
                 st.markdown("**Great example to emulate**")
                 st.code(payload["great_example_reference"], language="text")

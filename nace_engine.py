@@ -347,6 +347,14 @@ QUALITY_SIGNAL_LABELS = {
     "feedback_or_iteration": "feedback or revision loop",
 }
 
+MISSING_SIGNAL_PROMPTS = {
+    "measurable_verb": "Use a measurable action verb (analyze, evaluate, design, justify).",
+    "deliverable": "Name the concrete deliverable (memo, report, quiz response, presentation).",
+    "assessment_criteria": "Add grading/rubric criteria for how this will be assessed.",
+    "audience_or_context": "Specify audience or real-world context for the task.",
+    "feedback_or_iteration": "Include feedback, revision, or peer-review expectations.",
+}
+
 
 def _detect_quality_signals(excerpt: str) -> List[str]:
     excerpt_lc = excerpt.lower()
@@ -411,6 +419,13 @@ def _assignment_aligned_rewrite(
     )
 
 
+def _missing_signal_prompts(missing_signals: List[str]) -> List[str]:
+    prompts: List[str] = []
+    for signal in missing_signals:
+        prompts.append(MISSING_SIGNAL_PROMPTS.get(signal, signal.replace("_", " ")))
+    return prompts
+
+
 def _build_assignment_aligned_suggestions(
     competency_key: str,
     competency: CompetencyDefinition,
@@ -442,6 +457,7 @@ def _build_assignment_aligned_suggestions(
                     f"Current quality markers: {_quality_signal_list(present_signals)}."
                 ),
                 "missing_signal_markers": missing_signals,
+                "missing_signal_prompts": _missing_signal_prompts(missing_signals),
             }
         )
         if len(aligned) >= 3:
@@ -464,6 +480,7 @@ def _build_assignment_aligned_suggestions(
                         "evidence excerpt was detected."
                     ),
                     "missing_signal_markers": ["assessment_criteria"],
+                    "missing_signal_prompts": _missing_signal_prompts(["assessment_criteria"]),
                 }
             )
 
@@ -797,6 +814,32 @@ def _focus_action(competency: CompetencyDefinition) -> str:
         f"Prioritize updates in: {', '.join(competency.placement_targets[:2])}. "
         "Add one measurable outcome and one assignment/rubric criterion."
     )
+
+
+def _contextual_improvement_examples(
+    competency_key: str, activity_lines: List[str], assignment_mode: bool
+) -> List[str]:
+    exemplar = EXEMPLAR_LIBRARY.get(competency_key, {})
+    stem = exemplar.get("suggestion_stem", "")
+    examples: List[str] = []
+    for line in activity_lines[:3]:
+        rewritten = _assignment_aligned_rewrite(
+            line,
+            competency_key.replace("_", " ").title(),
+            stem,
+            ["assessment_criteria"],
+        )
+        examples.append(rewritten)
+    if not examples:
+        if assignment_mode:
+            examples.append(
+                f"Week X Assignment: [current task]. {stem} Add rubric criteria for full credit."
+            )
+        else:
+            examples.append(
+                f"Week X activity update: [current task]. {stem} Include a measurable rubric row."
+            )
+    return examples
 
 
 def _resolve_section(target_label: str) -> str:

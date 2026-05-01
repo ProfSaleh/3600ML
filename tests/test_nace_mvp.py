@@ -125,3 +125,5 @@ def test_suggestions_are_aligned_to_assignment_lines():
     assert rewrites
     assert "source_location" in rewrites[0]
     assert "suggested_rewrite" in rewrites[0]
+    assert "missing_signal_prompts" in rewrites[0]
+    assert rewrites[0]["alignment_reason"]

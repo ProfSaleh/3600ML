@@ -970,6 +970,7 @@ def evaluate_syllabus(
             "analysis_mode": "assignment" if assignment_mode else "syllabus",
             "assignment_mode": assignment_mode,
             "great_examples": great_examples,
+            "covered_sections": sorted({item.get("section", "General") for item in evidence}),
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -998,19 +999,41 @@ def generate_recommendations(
         evidence_items = []
         if analysis and key in analysis:
             evidence_items = analysis[key].get("evidence", [])
+        covered_sections = sorted(
+            {item.get("section", "General") for item in evidence_items if item.get("section")}
+        )
         placements = []
         for target_label in definition.placement_targets:
             plan = _insertion_plan(target_label, sections)
             plan["copy_ready_text"] = _copy_ready_text(definition, target_label)
             placements.append(plan)
         weekly_task_suggestions: List[str] = []
+        if evidence_items:
+            for evidence in evidence_items[:3]:
+                excerpt = evidence.get("excerpt", "")
+                if not excerpt:
+                    continue
+                present_signals = evidence.get("quality_signals", [])
+                missing_signals = _missing_quality_signals(present_signals)
+                rewrite = _assignment_aligned_rewrite(
+                    excerpt,
+                    definition.name,
+                    exemplar.get("suggestion_stem", definition.light_template),
+                    missing_signals,
+                )
+                weekly_task_suggestions.append(
+                    "Current assignment evidence:\n"
+                    + excerpt
+                    + "\nRecommended improvement:\n"
+                    + rewrite
+                )
         for line in activity_lines[:10]:
+            if len(weekly_task_suggestions) >= 3:
+                break
             if _contains_task_marker(line):
                 weekly_task_suggestions.append(
                     f"{line}\nSuggested addition: {definition.light_template}"
                 )
-            if len(weekly_task_suggestions) >= 3:
-                break
         if not weekly_task_suggestions:
             if assignment_mode:
                 weekly_task_suggestions = [
@@ -1043,6 +1066,18 @@ def generate_recommendations(
                     definition.name,
                 )
             )
+        recommendation_confidence = (
+            "High"
+            if len(evidence_items) >= 2
+            else "Medium"
+            if len(evidence_items) == 1
+            else "Low"
+        )
+        realism_note = (
+            "Recommendations are grounded in detected assignment evidence lines."
+            if len(evidence_items) >= 1
+            else "Limited direct evidence found; recommendations are template-based and should be reviewed carefully."
+        )
         recommendations[key] = {
             "name": definition.name,
             "placements": placements,
@@ -1050,6 +1085,9 @@ def generate_recommendations(
             "aligned_suggestions": aligned_suggestions,
             "exemplar_rewrites": exemplar_rewrites,
             "great_example_reference": exemplar.get("strong_evidence_example", ""),
+            "covered_sections": covered_sections,
+            "recommendation_confidence": recommendation_confidence,
+            "realism_note": realism_note,
             "why": (
                 "These sections are where this competency is usually made explicit. "
                 "Weekly tasks are prioritized so competency evidence is visible in day-to-day coursework."

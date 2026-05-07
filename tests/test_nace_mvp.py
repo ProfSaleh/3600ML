@@ -67,8 +67,9 @@ def test_evaluate_syllabus_returns_all_competencies():
 
 def test_recommendation_and_render_pipeline():
     sections = split_into_sections(SAMPLE_SYLLABUS)
+    analysis = evaluate_syllabus(SAMPLE_SYLLABUS, sections)
     recommendations = generate_recommendations(
-        sections, ["communication", "technology"]
+        sections, ["communication", "technology"], analysis=analysis
     )
 
     assert "communication" in recommendations
@@ -77,6 +78,9 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["technology"]["name"] == "Technology"
     assert recommendations["communication"]["weekly_task_suggestions"]
     assert recommendations["communication"]["exemplar_rewrites"]
+    assert recommendations["communication"]["recommendation_confidence"] in {"Low", "Medium", "High"}
+    assert recommendations["communication"]["realism_note"]
+    assert recommendations["communication"]["covered_sections"]
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,
@@ -117,8 +121,9 @@ def test_suggestions_are_aligned_to_assignment_lines():
     - DQ: Provide peer feedback on two classmates' drafts.
     """
     sections = split_into_sections(assignment_text)
+    analysis = evaluate_syllabus(assignment_text, sections, assignment_mode=True)
     recommendations = generate_recommendations(
-        sections, ["communication"], assignment_mode=True
+        sections, ["communication"], assignment_mode=True, analysis=analysis
     )
 
     rewrites = recommendations["communication"]["aligned_suggestions"]

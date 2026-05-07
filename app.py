@@ -11,11 +11,11 @@ from nace_engine import (
 )
 from parser import extract_text_from_upload, split_into_sections
 
-st.set_page_config(page_title="NACE Syllabus Assistant", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="NACE Assignment Assistant", page_icon="🎓", layout="wide")
 
 STEP_LABELS = {
-    1: "1) Upload / Paste",
-    2: "2) Scorecard",
+    1: "1) Upload Assignment",
+    2: "2) Analysis Scorecard",
     3: "3) Evidence + Select",
     4: "4) Placement Suggestions",
     5: "5) Review + Export",
@@ -33,7 +33,7 @@ def init_state() -> None:
         "course_name": "",
         "course_code": "",
         "term": "",
-        "assignment_mode": False,
+        "assignment_mode": True,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -73,10 +73,10 @@ def evidence_card_style(strength: str) -> str:
 
 
 def render_header() -> None:
-    st.title("NACE Competency Syllabus Assistant (MVP)")
+    st.title("NACE Competency Assignment Assistant")
     st.caption(
-        "Upload or paste a syllabus, review NACE competency coverage, select competencies, "
-        "and apply suggested edits."
+        "Upload or paste an assignment, analyze where NACE competencies are covered or missing, "
+        "and get realistic assignment-aligned rewrites."
     )
     st.info("Current step: " + STEP_LABELS[st.session_state.step])
 
@@ -104,7 +104,7 @@ def assessment_focus_badge(source: str) -> str:
 
 
 def step_1_upload() -> None:
-    st.subheader("Step 1: Upload or paste syllabus")
+    st.subheader("Step 1: Upload or paste assignment")
     left, right = st.columns(2)
     with left:
         st.session_state.course_name = st.text_input("Course Name", st.session_state.course_name)
@@ -119,16 +119,16 @@ def step_1_upload() -> None:
                 "missing syllabus-wide sections."
             ),
         )
-        uploaded = st.file_uploader("Upload syllabus", type=["pdf", "docx", "txt"])
+        uploaded = st.file_uploader("Upload assignment", type=["pdf", "docx", "txt"])
     with right:
         pasted = st.text_area(
-            "Or paste syllabus text",
+            "Or paste assignment text",
             value=st.session_state.syllabus_text,
             height=260,
-            placeholder="Paste syllabus content here...",
+            placeholder="Paste assignment content here...",
         )
 
-    if st.button("Analyze syllabus", type="primary"):
+    if st.button("Analyze Assignment", type="primary"):
         text = ""
         if uploaded is not None:
             text = extract_text_from_upload(uploaded.name, uploaded.getvalue())
@@ -139,13 +139,14 @@ def step_1_upload() -> None:
             st.error("Please upload a file or paste text.")
             return
 
-        parse_and_analyze(text)
-        st.success("Analysis complete.")
+        with st.spinner("Analyzing assignment evidence and competency coverage..."):
+            parse_and_analyze(text)
+        st.success("Assignment analysis complete.")
         go_to_step(2)
         st.rerun()
 
     if st.session_state.syllabus_text:
-        with st.expander("Preview extracted syllabus text", expanded=False):
+        with st.expander("Preview extracted assignment text", expanded=False):
             st.text_area("Extracted text", st.session_state.syllabus_text, height=240, disabled=True)
 
 
@@ -154,7 +155,7 @@ def step_2_scorecard() -> None:
         st.warning("No analysis available. Complete Step 1 first.")
         return
 
-    st.subheader("Step 2: NACE competency scorecard")
+    st.subheader("Step 2: Assignment competency scorecard")
     analysis: Dict[str, dict] = st.session_state.analysis
     meta = analysis.get("_analysis_meta", {})
     stage_notes = meta.get("analysis_notes", {})
@@ -183,23 +184,43 @@ def step_2_scorecard() -> None:
         for key, value in analysis.items()
         if not key.startswith("_")
     ]
+    evidence_total = sum(len(item[1].get("evidence", [])) for item in competency_items)
+    covered_count = sum(1 for _, item in competency_items if item["level"] != "Low")
+    missing_count = sum(1 for _, item in competency_items if item["level"] == "Low")
+    avg_score = (
+        round(sum(item["score"] for _, item in competency_items) / len(competency_items))
+        if competency_items
+        else 0
+    )
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Assignment lines analyzed", weekly_summary.get("line_count", 0))
+    metric_cols[1].metric("Evidence snippets", evidence_total)
+    metric_cols[2].metric("Competencies covered", covered_count)
+    metric_cols[3].metric("Avg competency score", f"{avg_score}/100")
+    st.caption(f"Missing/weak competencies: {missing_count}")
+
     cols = st.columns(2)
     for idx, (name, result) in enumerate(competency_items):
         with cols[idx % 2]:
             level = result["level"]
             score = result["score"]
-            status = "Missing / Weak" if level == "Low" else "Present"
+            coverage_status = "Missing / Weak" if level == "Low" else "Present"
             st.markdown(
                 f"### {result['name']}\n"
                 f"- **Status:** {score_badge(level, score)}\n"
-                f"- **Status:** {status}\n"
+                f"- **Coverage:** {coverage_status}\n"
                 f"- **Confidence:** {result['confidence']}"
             )
             st.caption(result["description"])
+            covered_sections = result.get("covered_sections", [])
+            if covered_sections:
+                st.caption("Evidence sections: " + ", ".join(covered_sections))
+            else:
+                st.caption("No assignment section evidence detected yet.")
             if result["missing_or_weak"]:
                 st.warning(result["missing_explanation"], icon="⚠️")
             else:
-                st.success("This competency has clear evidence in your syllabus.")
+                st.success("This competency has clear evidence in your assignment.")
 
     missing = [v["name"] for _, v in competency_items if v["level"] == "Low"]
     if missing:
@@ -226,7 +247,7 @@ def step_3_evidence_select() -> None:
         st.warning("No analysis available. Complete Step 1 first.")
         return
 
-    st.subheader("Step 3: Evidence + rationale + select competencies")
+    st.subheader("Step 3: Assignment evidence + select competencies")
     analysis: Dict[str, dict] = st.session_state.analysis
     selections: List[str] = st.session_state.selected_competencies[:]
 
@@ -277,7 +298,7 @@ def step_3_evidence_select() -> None:
                         st.markdown("   - **Great example to emulate:**")
                         st.code(evidence["great_example_reference"], language="text")
             else:
-                st.markdown("- No direct evidence found in this syllabus text.")
+                st.markdown("- No direct evidence found in this assignment text.")
             selected = st.checkbox(
                 f"Select {competency_name} for improvement",
                 value=competency_key in st.session_state.selected_competencies,
@@ -304,6 +325,7 @@ def step_3_evidence_select() -> None:
                 st.session_state.sections,
                 selections,
                 assignment_mode=st.session_state.assignment_mode,
+                analysis=st.session_state.analysis,
             )
             go_to_step(4)
             st.rerun()
@@ -314,16 +336,22 @@ def step_4_recommendations() -> None:
         st.warning("No suggestions generated yet. Complete Step 3 first.")
         return
 
-    st.subheader("Step 4: Placement recommendations")
+    st.subheader("Step 4: Assignment-aligned recommendations")
     st.caption(
-        "Each competency below includes exact placement directions and copy-ready text "
-        "you can paste into your syllabus."
+        "Each competency below includes realistic, assignment-relative rewrites grounded in your uploaded content."
     )
     recommendations: Dict[str, dict] = st.session_state.recommendations
 
     for competency_key, payload in recommendations.items():
         with st.container(border=True):
             st.markdown(f"### {payload['name']}")
+            st.markdown(
+                f"**Recommendation confidence:** {payload.get('recommendation_confidence', 'N/A')}"
+            )
+            if payload.get("realism_note"):
+                st.caption(payload["realism_note"])
+            if payload.get("covered_sections"):
+                st.caption("Grounded sections: " + ", ".join(payload["covered_sections"]))
             st.markdown("**Where to place this competency (exact plan)**")
             for i, placement in enumerate(payload["placements"], start=1):
                 status_emoji = "✅" if placement["status"] == "Found existing section" else "➕"

@@ -472,6 +472,65 @@ SCENARIO_OPTION_LIBRARY: Dict[str, List[dict]] = {
     ],
 }
 
+INCLUDE_GUIDE_LIBRARY: Dict[str, List[str]] = {
+    "career_self_development": [
+        "Reflection prompt: Ask students to identify one strength, one gap, and one professional growth target.",
+        "Deliverable: Require a 1-page professional development memo or action plan.",
+        "Revision requirement: Require one revision after instructor or peer feedback.",
+        "Rubric criteria: Score clarity of goals, quality of reflection evidence, and quality of revision.",
+        "Timeline: State when draft and revised versions are due.",
+    ],
+    "communication": [
+        "Audience requirement: Name the exact audience (client, community partner, executive team).",
+        "Deliverable: Require a brief/report/presentation with a word or time limit.",
+        "Rubric criteria: Score clarity, organization, and evidence use.",
+        "Context: State the communication purpose (inform, persuade, recommend).",
+        "Revision option: Include peer/instructor feedback before final submission.",
+    ],
+    "critical_thinking": [
+        "Evidence comparison: Require at least two sources or options to evaluate.",
+        "Decision task: Ask students to justify a final recommendation.",
+        "Deliverable: Require a decision memo or case analysis response.",
+        "Rubric criteria: Score reasoning quality, evidence quality, and trade-off analysis.",
+        "Reflection: Ask students to explain one limitation in their conclusion.",
+    ],
+    "equity_inclusion": [
+        "Perspective prompt: Require analysis of impact on at least two different groups.",
+        "Deliverable: Require an inclusive impact statement.",
+        "Rubric criteria: Score equity awareness, evidence use, and actionable recommendations.",
+        "Accessibility clause: Ask students to include one accessibility consideration.",
+        "Revision: Ask students to improve their response after receiving feedback.",
+    ],
+    "leadership": [
+        "Role assignment: Define who leads each milestone/task.",
+        "Deliverable: Require a leadership log or facilitation summary.",
+        "Rubric criteria: Score initiative, coordination, and ethical decision-making.",
+        "Team accountability: Require documentation of delegated responsibilities.",
+        "Reflection: Ask students to reflect on leadership impact and next-step improvements.",
+    ],
+    "professionalism": [
+        "Standards statement: Name expected professional behaviors (timeliness, quality, ethics).",
+        "Deliverable: Require a polished submission with formatting and quality expectations.",
+        "Rubric criteria: Score professionalism indicators explicitly.",
+        "Deadline policy: State late policy and accountability expectations.",
+        "Quality check: Require a brief self-check before submission.",
+    ],
+    "teamwork": [
+        "Collaboration structure: Define team roles and shared goals.",
+        "Deliverable: Require peer feedback and a contribution log.",
+        "Rubric criteria: Score collaboration quality, communication, and accountability.",
+        "Conflict protocol: Include a process for resolving team disagreements.",
+        "Reflection: Ask teams to summarize what they improved across milestones.",
+    ],
+    "technology": [
+        "Tool requirement: Name the exact software/platform students must use.",
+        "Deliverable: Require evidence of workflow (screenshots, output, or method note).",
+        "Rubric criteria: Score tool use accuracy, interpretation, and decision quality.",
+        "Ethics/privacy check: Require one risk consideration and mitigation step.",
+        "Reflection: Ask students to justify why the chosen tool fits the task.",
+    ],
+}
+
 QUALITY_SIGNAL_TERMS = {
     "measurable_verb": ("analyze", "evaluate", "create", "design", "develop", "justify", "apply"),
     "deliverable": ("submit", "brief", "report", "memo", "presentation", "project", "quiz", "exam"),
@@ -590,6 +649,7 @@ def _build_quick_pick_options(
     options = SCENARIO_OPTION_LIBRARY.get(competency_key, [])
     if not options:
         return []
+    include_items = _explicit_include_items(competency_key, competency)
 
     anchor_ref = "Assignments item 1"
     anchor_excerpt = ""
@@ -625,10 +685,26 @@ def _build_quick_pick_options(
                     "Portfolio-ready: students can showcase this artifact as evidence of "
                     f"{competency.name.lower()}."
                 ),
+                "include_items": include_items,
             }
         )
 
     return quick_picks
+
+
+def _explicit_include_items(
+    competency_key: str,
+    competency: CompetencyDefinition,
+) -> List[str]:
+    guide = INCLUDE_GUIDE_LIBRARY.get(competency_key, [])
+    if guide:
+        return guide
+    return [
+        f"Deliverable: Name one concrete output that demonstrates {competency.name}.",
+        "Rubric criteria: Add 2-3 measurable grading criteria.",
+        "Timeline: State draft and final due dates.",
+        "Feedback loop: Require at least one revision or peer/instructor feedback checkpoint.",
+    ]
 
 
 def _assignment_aligned_rewrite(
@@ -660,6 +736,7 @@ def _build_assignment_aligned_suggestions(
 ) -> List[dict]:
     exemplar = EXEMPLAR_LIBRARY.get(competency_key, {})
     suggestion_stem = exemplar.get("suggestion_stem", competency.light_template)
+    include_items = _explicit_include_items(competency_key, competency)
     aligned: List[dict] = []
 
     for evidence in evidence_items:
@@ -689,6 +766,7 @@ def _build_assignment_aligned_suggestions(
                     competency.name,
                     suggestion_stem,
                 ),
+                "include_items": include_items,
                 "alignment_reason": (
                     f"Matched '{evidence.get('indicator', 'keyword')}'. "
                     f"Current quality markers: {_quality_signal_list(present_signals)}."
@@ -724,6 +802,7 @@ def _build_assignment_aligned_suggestions(
                         competency.name,
                         suggestion_stem,
                     ),
+                    "include_items": include_items,
                     "alignment_reason": (
                         "Generated from assignment activity line because no competency-specific "
                         "evidence excerpt was detected."
@@ -1356,6 +1435,7 @@ def generate_recommendations(
     for key in selected_competencies:
         definition = COMPETENCIES[key]
         exemplar = EXEMPLAR_LIBRARY.get(key, {})
+        include_items = _explicit_include_items(key, definition)
         evidence_items = []
         if analysis and key in analysis:
             evidence_items = analysis[key].get("evidence", [])
@@ -1398,6 +1478,8 @@ def generate_recommendations(
                 )
                 weekly_task_suggestions.append(
                     f"{source_ref}: {excerpt}\nQuick upgrade: {rewrite}"
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[:3])
                 )
         for item in activity_lines[:10]:
             if len(weekly_task_suggestions) >= 3:
@@ -1407,17 +1489,27 @@ def generate_recommendations(
             if _contains_task_marker(line):
                 weekly_task_suggestions.append(
                     f"{source_ref}: {line}\nSuggested addition: {definition.light_template}"
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[:3])
                 )
         if not weekly_task_suggestions:
             if assignment_mode:
                 weekly_task_suggestions = [
-                    "Add one assignment instruction that explicitly names this competency and how it will be graded.",
-                    "Add one rubric row tied to this competency with clear performance criteria.",
+                    "Add one assignment instruction that explicitly names this competency and how it will be graded."
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[:3]),
+                    "Add one rubric row tied to this competency with clear performance criteria."
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[2:5]),
                 ]
             else:
                 weekly_task_suggestions = [
-                    "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'",
-                    "Add a graded milestone in weekly schedule tied to this competency.",
+                    "Add a weekly line such as: 'Week X: DQ on applying this competency to a real scenario.'"
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[:3]),
+                    "Add a graded milestone in weekly schedule tied to this competency."
+                    + "\nWhat to include exactly:\n- "
+                    + "\n- ".join(include_items[2:5]),
                 ]
         aligned_suggestions = _build_assignment_aligned_suggestions(
             key, definition, evidence_items, activity_lines
@@ -1475,6 +1567,7 @@ def generate_recommendations(
             "recommendation_confidence": recommendation_confidence,
             "realism_note": realism_note,
             "option_count": len(quick_pick_options),
+            "explicit_include_items": include_items,
             "why": (
                 "These sections are where this competency is usually made explicit. "
                 "Weekly tasks are prioritized so competency evidence is visible in day-to-day coursework."

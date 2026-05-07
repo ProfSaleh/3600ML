@@ -377,6 +377,10 @@ def step_4_recommendations() -> None:
                 st.caption(
                     f"✨ {payload['option_count']} quick-pick scenario options generated for this competency."
                 )
+            if payload.get("explicit_include_items"):
+                st.markdown("**What to include exactly (recommended checklist)**")
+                for item in payload["explicit_include_items"]:
+                    st.markdown(f"- {item}")
             if payload.get("quick_pick_options"):
                 st.markdown("**Quick-pick scenario suggestions (concise + portfolio-ready)**")
                 icons = ["💡", "🚀", "🧩", "📁"]
@@ -397,6 +401,10 @@ def step_4_recommendations() -> None:
                             )
                             st.markdown("**Copy-ready insert:**")
                             st.code(option["suggested_insert"], language="text")
+                            if option.get("include_items"):
+                                st.markdown("**Include in this option:**")
+                                for item in option["include_items"][:4]:
+                                    st.markdown(f"- {item}")
                             st.caption(option["appeal_note"])
             st.markdown("**Where to place this competency (exact plan)**")
             for i, placement in enumerate(payload["placements"], start=1):
@@ -430,6 +438,10 @@ def step_4_recommendations() -> None:
                     if aligned.get("realistic_example"):
                         st.markdown("  **Realistic example you can copy/adapt:**")
                         st.code(aligned["realistic_example"], language="text")
+                    if aligned.get("include_items"):
+                        st.markdown("  **Include exactly:**")
+                        for item in aligned["include_items"][:4]:
+                            st.markdown(f"  - {item}")
                     st.caption(aligned["alignment_reason"])
                     if aligned.get("missing_signal_prompts"):
                         st.markdown(

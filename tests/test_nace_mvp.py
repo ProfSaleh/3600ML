@@ -109,9 +109,11 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["communication"]["covered_references"]
     assert recommendations["communication"]["quick_pick_options"]
     assert recommendations["communication"]["option_count"] >= 1
+    assert recommendations["communication"]["explicit_include_items"]
     quick_pick = recommendations["communication"]["quick_pick_options"][0]
     assert quick_pick["portfolio_artifact"]
     assert quick_pick["suggested_insert"]
+    assert quick_pick["include_items"]
     assert "option" in quick_pick["option_label"].lower()
 
     revised = render_revised_syllabus(
@@ -165,6 +167,7 @@ def test_suggestions_are_aligned_to_assignment_lines():
     assert rewrites[0]["source_reference_detail"]
     assert "suggested_rewrite" in rewrites[0]
     assert "realistic_example" in rewrites[0]
+    assert rewrites[0]["include_items"]
     assert "apply_location" in rewrites[0]
     assert "search for" in rewrites[0]["apply_location"].lower()
     assert "missing_signal_prompts" in rewrites[0]

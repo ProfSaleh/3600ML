@@ -98,7 +98,7 @@ def parse_and_analyze(text: str) -> None:
 def assessment_focus_badge(source: str) -> str:
     if source == "weekly":
         return "🗓️ Weekly/assignment/assessment evidence (primary)"
-    if source == "foundational":
+    if source in {"foundational", "course-level"}:
         return "📘 Course outcomes/description evidence"
     return "📄 General syllabus evidence"
 
@@ -160,6 +160,7 @@ def step_2_scorecard() -> None:
     meta = analysis.get("_analysis_meta", {})
     stage_notes = meta.get("analysis_notes", {})
     weekly_summary = meta.get("weekly_summary", {})
+    line_scan = meta.get("line_by_line_scan", {})
     if stage_notes:
         st.markdown("### How this analysis was performed")
         stage1 = stage_notes.get("stage_1", {})
@@ -192,11 +193,12 @@ def step_2_scorecard() -> None:
         if competency_items
         else 0
     )
-    metric_cols = st.columns(4)
-    metric_cols[0].metric("Assignment lines analyzed", weekly_summary.get("line_count", 0))
-    metric_cols[1].metric("Evidence snippets", evidence_total)
-    metric_cols[2].metric("Competencies covered", covered_count)
-    metric_cols[3].metric("Avg competency score", f"{avg_score}/100")
+    metric_cols = st.columns(5)
+    metric_cols[0].metric("Lines scanned (line-by-line)", line_scan.get("non_empty_lines", 0))
+    metric_cols[1].metric("Activity lines", line_scan.get("activity_lines", 0))
+    metric_cols[2].metric("Evidence snippets", evidence_total)
+    metric_cols[3].metric("Competencies covered", covered_count)
+    metric_cols[4].metric("Avg competency score", f"{avg_score}/100")
     st.caption(f"Missing/weak competencies: {missing_count}")
 
     cols = st.columns(2)
@@ -213,10 +215,18 @@ def step_2_scorecard() -> None:
             )
             st.caption(result["description"])
             covered_sections = result.get("covered_sections", [])
+            covered_lines = result.get("covered_line_numbers", [])
             if covered_sections:
                 st.caption("Evidence sections: " + ", ".join(covered_sections))
             else:
                 st.caption("No assignment section evidence detected yet.")
+            if covered_lines:
+                st.caption(
+                    "Covered on assignment at lines: "
+                    + ", ".join(str(num) for num in covered_lines)
+                )
+            elif level != "Low":
+                st.caption("Covered on assignment location could not be resolved.")
             if result["missing_or_weak"]:
                 st.warning(result["missing_explanation"], icon="⚠️")
             else:
@@ -274,8 +284,10 @@ def step_3_evidence_select() -> None:
             st.markdown("**Evidence found**")
             if result["evidence"]:
                 for idx, evidence in enumerate(result["evidence"], start=1):
+                    line_reference = evidence.get("line_reference", "Line n/a")
                     st.markdown(
                         f"{idx}. {evidence_card_style(evidence['strength'])} **Section:** `{evidence['section']}` "
+                        f"| **Location:** `{line_reference}` "
                         f"| **Matched term:** `{evidence['indicator']}` "
                         f"| **Strength:** {evidence_strength_badge(evidence['strength'])}"
                     )
@@ -290,6 +302,9 @@ def step_3_evidence_select() -> None:
                     )
                     if evidence.get("quality_gap"):
                         st.markdown(f"   - **Quality gap to improve:** {evidence['quality_gap']}")
+                    st.markdown(
+                        f"   - **Covered here on assignment:** Revise or keep `{line_reference}` in section `{evidence.get('section', 'General')}`."
+                    )
                     st.code(evidence["excerpt"], language="text")
                     if evidence.get("assignment_aligned_suggestion"):
                         st.markdown("   - **Suggested revision for this exact line:**")
@@ -352,6 +367,11 @@ def step_4_recommendations() -> None:
                 st.caption(payload["realism_note"])
             if payload.get("covered_sections"):
                 st.caption("Grounded sections: " + ", ".join(payload["covered_sections"]))
+            if payload.get("covered_line_numbers"):
+                st.caption(
+                    "Competency currently covered at lines: "
+                    + ", ".join(str(num) for num in payload["covered_line_numbers"])
+                )
             st.markdown("**Where to place this competency (exact plan)**")
             for i, placement in enumerate(payload["placements"], start=1):
                 status_emoji = "✅" if placement["status"] == "Found existing section" else "➕"
@@ -374,6 +394,8 @@ def step_4_recommendations() -> None:
                     st.markdown(
                         f"- **Source line:** `{aligned['source_location']}`"
                     )
+                    if aligned.get("apply_location"):
+                        st.markdown(f"  **Apply at:** {aligned['apply_location']}")
                     st.code(aligned["original_excerpt"], language="text")
                     st.markdown("  **Improved rewrite:**")
                     st.code(aligned["suggested_rewrite"], language="text")

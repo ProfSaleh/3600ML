@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from nace_engine import evaluate_syllabus, generate_recommendations, render_revised_syllabus
-from parser import split_into_sections
+from parser import parse_line_items, split_into_sections
 
 
 SAMPLE_SYLLABUS = """
@@ -38,6 +38,21 @@ def test_split_into_sections_detects_common_headings():
     assert "peer review" in sections["Assignments"].lower()
 
 
+def test_parse_line_items_tracks_line_numbers_and_sections():
+    line_items = parse_line_items(SAMPLE_SYLLABUS)
+    assert line_items
+    first = line_items[0]
+    assert first["line_number"] >= 1
+    assert first["section"] in {
+        "Learning Outcomes",
+        "Assignments",
+        "Weekly Schedule",
+        "Assessment",
+        "General",
+    }
+    assert first["text"]
+
+
 def test_evaluate_syllabus_returns_all_competencies():
     sections = split_into_sections(SAMPLE_SYLLABUS)
     analysis = evaluate_syllabus(SAMPLE_SYLLABUS, sections)
@@ -52,8 +67,14 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert "week" in analysis["communication"]["weekly_focus"]["summary"].lower()
     assert analysis["communication"]["weekly_focus"]["task_items_found"] >= 4
     assert analysis["communication"]["weekly_indicator_hits"] >= 1
+    assert analysis["communication"]["covered_line_numbers"]
+    assert analysis["_analysis_meta"]["line_by_line_scan"]["non_empty_lines"] > 0
     evidence_item = analysis["communication"]["evidence"][0]
     assert "section" in evidence_item
+    assert "line_number" in evidence_item
+    assert evidence_item["line_number"] > 0
+    assert "line_reference" in evidence_item
+    assert evidence_item["line_reference"].startswith("Line ")
     assert "excerpt" in evidence_item
     assert "reason" in evidence_item
     assert "quality_signals" in evidence_item
@@ -81,6 +102,7 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["communication"]["recommendation_confidence"] in {"Low", "Medium", "High"}
     assert recommendations["communication"]["realism_note"]
     assert recommendations["communication"]["covered_sections"]
+    assert recommendations["communication"]["covered_line_numbers"]
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,
@@ -129,6 +151,8 @@ def test_suggestions_are_aligned_to_assignment_lines():
     rewrites = recommendations["communication"]["aligned_suggestions"]
     assert rewrites
     assert "source_location" in rewrites[0]
+    assert "Line " in rewrites[0]["source_location"]
     assert "suggested_rewrite" in rewrites[0]
+    assert "apply_location" in rewrites[0]
     assert "missing_signal_prompts" in rewrites[0]
     assert rewrites[0]["alignment_reason"]

@@ -151,6 +151,36 @@ def sentence_list(text: str) -> List[str]:
     return [piece.strip() for piece in pieces if piece.strip()]
 
 
+def parse_line_items(text: str) -> List[dict]:
+    """
+    Parse text line-by-line and attach inferred section context.
+    Returns non-empty content lines with source line numbers.
+    """
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    current_section = "General"
+    items: List[dict] = []
+
+    for line_number, raw_line in enumerate(normalized.split("\n"), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        candidate = _section_from_heading(line)
+        if candidate:
+            current_section = candidate
+            continue
+
+        items.append(
+            {
+                "line_number": line_number,
+                "section": current_section,
+                "text": line,
+            }
+        )
+
+    return items
+
+
 def extract_weekly_breakdown(sections: SectionMap) -> List[dict]:
     """
     Extract assignment/activity lines with week/module context.

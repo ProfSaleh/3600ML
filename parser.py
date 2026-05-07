@@ -158,6 +158,8 @@ def parse_line_items(text: str) -> List[dict]:
     """
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
     current_section = "General"
+    item_number = 0
+    section_counters: Dict[str, int] = {}
     items: List[dict] = []
 
     for line_number, raw_line in enumerate(normalized.split("\n"), start=1):
@@ -170,9 +172,13 @@ def parse_line_items(text: str) -> List[dict]:
             current_section = candidate
             continue
 
+        item_number += 1
+        section_counters[current_section] = section_counters.get(current_section, 0) + 1
         items.append(
             {
                 "line_number": line_number,
+                "item_number": item_number,
+                "section_item_number": section_counters[current_section],
                 "section": current_section,
                 "text": line,
             }

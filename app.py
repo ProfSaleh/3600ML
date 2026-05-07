@@ -166,8 +166,9 @@ def step_2_scorecard() -> None:
         stage1 = stage_notes.get("stage_1", {})
         stage2 = stage_notes.get("stage_2", {})
         st.info(
-            f"1) {stage1.get('summary', '')}\n\n"
-            f"2) {stage2.get('summary', '')}"
+            f"1) {stage1.get('title', 'Stage 1')}: {stage1.get('summary', '')}\n\n"
+            f"2) {stage2.get('title', 'Stage 2')}: {stage2.get('summary', '')}\n\n"
+            f"3) Assignment references reviewed first: {stage2.get('sampled_activity_refs', 'N/A')}"
         )
     if weekly_summary:
         coverage = weekly_summary.get("coverage", "Low")
@@ -215,15 +216,15 @@ def step_2_scorecard() -> None:
             )
             st.caption(result["description"])
             covered_sections = result.get("covered_sections", [])
-            covered_lines = result.get("covered_line_numbers", [])
+            covered_refs = result.get("covered_references", [])
             if covered_sections:
                 st.caption("Evidence sections: " + ", ".join(covered_sections))
             else:
                 st.caption("No assignment section evidence detected yet.")
-            if covered_lines:
+            if covered_refs:
                 st.caption(
-                    "Covered on assignment at lines: "
-                    + ", ".join(str(num) for num in covered_lines)
+                    "Covered on assignment at: "
+                    + ", ".join(covered_refs)
                 )
             elif level != "Low":
                 st.caption("Covered on assignment location could not be resolved.")
@@ -284,7 +285,7 @@ def step_3_evidence_select() -> None:
             st.markdown("**Evidence found**")
             if result["evidence"]:
                 for idx, evidence in enumerate(result["evidence"], start=1):
-                    line_reference = evidence.get("line_reference", "Line n/a")
+                    line_reference = evidence.get("line_reference", "Reference not available")
                     st.markdown(
                         f"{idx}. {evidence_card_style(evidence['strength'])} **Section:** `{evidence['section']}` "
                         f"| **Location:** `{line_reference}` "
@@ -303,7 +304,7 @@ def step_3_evidence_select() -> None:
                     if evidence.get("quality_gap"):
                         st.markdown(f"   - **Quality gap to improve:** {evidence['quality_gap']}")
                     st.markdown(
-                        f"   - **Covered here on assignment:** Revise or keep `{line_reference}` in section `{evidence.get('section', 'General')}`."
+                        f"   - **Covered here on assignment:** {evidence.get('source_reference', line_reference)}"
                     )
                     st.code(evidence["excerpt"], language="text")
                     if evidence.get("assignment_aligned_suggestion"):
@@ -367,10 +368,10 @@ def step_4_recommendations() -> None:
                 st.caption(payload["realism_note"])
             if payload.get("covered_sections"):
                 st.caption("Grounded sections: " + ", ".join(payload["covered_sections"]))
-            if payload.get("covered_line_numbers"):
+            if payload.get("covered_references"):
                 st.caption(
-                    "Competency currently covered at lines: "
-                    + ", ".join(str(num) for num in payload["covered_line_numbers"])
+                    "Competency currently covered at: "
+                    + ", ".join(payload["covered_references"])
                 )
             st.markdown("**Where to place this competency (exact plan)**")
             for i, placement in enumerate(payload["placements"], start=1):
@@ -394,11 +395,16 @@ def step_4_recommendations() -> None:
                     st.markdown(
                         f"- **Source line:** `{aligned['source_location']}`"
                     )
+                    if aligned.get("source_reference_detail"):
+                        st.caption(aligned["source_reference_detail"])
                     if aligned.get("apply_location"):
                         st.markdown(f"  **Apply at:** {aligned['apply_location']}")
                     st.code(aligned["original_excerpt"], language="text")
                     st.markdown("  **Improved rewrite:**")
                     st.code(aligned["suggested_rewrite"], language="text")
+                    if aligned.get("realistic_example"):
+                        st.markdown("  **Realistic example you can copy/adapt:**")
+                        st.code(aligned["realistic_example"], language="text")
                     st.caption(aligned["alignment_reason"])
                     if aligned.get("missing_signal_prompts"):
                         st.markdown(

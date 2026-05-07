@@ -401,6 +401,36 @@ def _rewrite_activity_line(original_line: str, suggestion_stem: str, competency_
     )
 
 
+def _realistic_signal_additions(missing_signals: List[str]) -> str:
+    additions: List[str] = []
+    if "deliverable" in missing_signals:
+        additions.append("name a concrete deliverable (memo, report, slide deck, or presentation)")
+    if "assessment_criteria" in missing_signals:
+        additions.append("add rubric criteria with point weights (e.g., clarity 30%, evidence 40%, application 30%)")
+    if "audience_or_context" in missing_signals:
+        additions.append("specify a real audience/context (client, community partner, or stakeholder)")
+    if "feedback_or_iteration" in missing_signals:
+        additions.append("require one feedback/revision checkpoint before final submission")
+    if "measurable_verb" in missing_signals:
+        additions.append("use measurable verbs such as analyze, justify, and evaluate")
+    if not additions:
+        return "keep the measurable task and rubric language explicit."
+    return "; ".join(additions[:3]) + "."
+
+
+def _realistic_assignment_example(
+    excerpt: str,
+    competency_name: str,
+    suggestion_stem: str,
+) -> str:
+    base_task = _preview(excerpt.rstrip("."), 100)
+    return (
+        f"Example rewrite: \"{base_task}. Students must submit one measurable deliverable, "
+        f"and grading should explicitly evaluate {competency_name.lower()} performance. "
+        f"{suggestion_stem}\""
+    )
+
+
 def _assignment_aligned_rewrite(
     excerpt: str,
     competency_name: str,
@@ -408,16 +438,10 @@ def _assignment_aligned_rewrite(
     missing_signals: List[str],
 ) -> str:
     clean = excerpt.rstrip(".")
-    missing_text = ""
-    if missing_signals:
-        missing_text = (
-            " Add missing quality markers: "
-            + _quality_signal_list(missing_signals)
-            + "."
-        )
+    realistic_addition = _realistic_signal_additions(missing_signals)
     return (
-        f"{clean}. {suggestion_stem}{missing_text} "
-        f"This line now directly measures {competency_name}."
+        f"{clean}. Revision example: {suggestion_stem} To make this assignment-ready, "
+        f"{realistic_addition} This revision makes {competency_name} coverage explicit."
     )
 
 
@@ -444,11 +468,12 @@ def _build_assignment_aligned_suggestions(
             continue
         present_signals = evidence.get("quality_signals", [])
         missing_signals = _missing_quality_signals(present_signals)
-        line_number = evidence.get("line_number")
-        line_ref = f"Line {line_number}" if isinstance(line_number, int) else "line not available"
+        source_ref = evidence.get("line_reference", evidence.get("section", "General"))
+        source_ref_detail = evidence.get("source_reference", source_ref)
         aligned.append(
             {
-                "source_location": f"{evidence.get('section', 'General')} | {line_ref}",
+                "source_location": source_ref,
+                "source_reference_detail": source_ref_detail,
                 "original_excerpt": excerpt,
                 "suggested_rewrite": _assignment_aligned_rewrite(
                     excerpt,
@@ -457,7 +482,12 @@ def _build_assignment_aligned_suggestions(
                     missing_signals,
                 ),
                 "apply_location": (
-                    f"Apply at {line_ref} in the {evidence.get('section', 'General')} section."
+                    f"Apply this at {source_ref}; search for: \"{excerpt[:70]}\"."
+                ),
+                "realistic_example": _realistic_assignment_example(
+                    excerpt,
+                    competency.name,
+                    suggestion_stem,
                 ),
                 "alignment_reason": (
                     f"Matched '{evidence.get('indicator', 'keyword')}'. "
@@ -473,11 +503,12 @@ def _build_assignment_aligned_suggestions(
     if not aligned:
         for item in fallback_activity_lines[:2]:
             line = item.get("text", "")
-            line_number = item.get("line_number")
-            line_ref = f"Line {line_number}" if isinstance(line_number, int) else "line not available"
+            source_ref = item.get("source_reference", item.get("section", "General"))
+            source_ref_detail = item.get("source_reference_detail", source_ref)
             aligned.append(
                 {
-                    "source_location": f"{item.get('section', 'General')} | {line_ref}",
+                    "source_location": source_ref,
+                    "source_reference_detail": source_ref_detail,
                     "original_excerpt": line,
                     "suggested_rewrite": _assignment_aligned_rewrite(
                         line,
@@ -485,7 +516,14 @@ def _build_assignment_aligned_suggestions(
                         suggestion_stem,
                         ["assessment_criteria"],
                     ),
-                    "apply_location": f"Apply at {line_ref} in your assignment instructions.",
+                    "apply_location": (
+                        f"Apply this at {source_ref}; place it directly under the related task bullet."
+                    ),
+                    "realistic_example": _realistic_assignment_example(
+                        line,
+                        competency.name,
+                        suggestion_stem,
+                    ),
                     "alignment_reason": (
                         "Generated from assignment activity line because no competency-specific "
                         "evidence excerpt was detected."
@@ -516,6 +554,25 @@ def _preview(text: str, max_len: int = 200) -> str:
     if len(cleaned) <= max_len:
         return cleaned
     return cleaned[: max_len - 3].rstrip() + "..."
+
+
+def _friendly_source_reference(item: dict) -> tuple[str, str]:
+    section = item.get("section", "General")
+    section_item_number = item.get("section_item_number")
+    item_number = item.get("item_number")
+    text = item.get("text", "")
+    lead = _preview(text, 70)
+    short_ref = (
+        f"{section} item {section_item_number}"
+        if isinstance(section_item_number, int)
+        else section
+    )
+    detailed_ref = (
+        f"{short_ref} (document item {item_number}): \"{lead}\""
+        if isinstance(item_number, int)
+        else f"{short_ref}: \"{lead}\""
+    )
+    return short_ref, detailed_ref
 
 
 def _split_evidence_units(text: str) -> List[str]:
@@ -624,7 +681,7 @@ def _build_competency_evidence(
         seen_excerpts.add(dedupe_key)
 
         line_number = item.get("line_number")
-        line_reference = f"Line {line_number}" if line_number else "Line n/a"
+        short_ref, detailed_ref = _friendly_source_reference(item)
         strength = _evidence_strength(len(matches), excerpt)
         source = _source_type(section_name, excerpt)
         week_label = _extract_week_label(excerpt)
@@ -635,7 +692,10 @@ def _build_competency_evidence(
             {
                 "section": section_name,
                 "line_number": line_number,
-                "line_reference": line_reference,
+                "item_number": item.get("item_number"),
+                "section_item_number": item.get("section_item_number"),
+                "line_reference": short_ref,
+                "source_reference": detailed_ref,
                 "excerpt": preview,
                 "indicator": matches[0],
                 "match_count": len(matches),
@@ -653,7 +713,8 @@ def _build_competency_evidence(
                 ),
                 "reason": (
                     f"Mentions {len(matches)} competency keyword(s): {', '.join(matches[:3])}. "
-                    f"Source priority: {source}. {_quality_signal_summary(quality_signals)}"
+                    f"Source priority: {source}. {_quality_signal_summary(quality_signals)} "
+                    f"Located at {short_ref}."
                 ),
                 "assignment_aligned_suggestion": _assignment_aligned_rewrite(
                     excerpt,
@@ -730,11 +791,16 @@ def _collect_activity_lines(
         if lowered in seen:
             continue
         seen.add(lowered)
+        short_ref, detailed_ref = _friendly_source_reference(item)
         activity_lines.append(
             {
                 "line_number": item.get("line_number"),
+                "item_number": item.get("item_number"),
+                "section_item_number": item.get("section_item_number"),
                 "section": section_name,
                 "text": cleaned,
+                "source_reference": short_ref,
+                "source_reference_detail": detailed_ref,
             }
         )
     return activity_lines
@@ -765,15 +831,21 @@ def _weekly_overview(activity_lines: List[dict], assignment_mode: bool) -> dict:
         coverage = "Medium"
     else:
         coverage = "Low"
+    sample_refs = ", ".join(
+        item.get("source_reference", item.get("section", "General"))
+        for item in activity_lines[:3]
+    )
     if assignment_mode:
         summary = (
             f"Detected {len(activity_lines)} assignment/activity lines; {len(task_like)} include "
-            "concrete tasks (assignments, discussions, quizzes, exams, or projects)."
+            "concrete tasks (assignments, discussions, quizzes, exams, or projects). "
+            f"Examples: {sample_refs}."
         )
     else:
         summary = (
             f"Detected {len(activity_lines)} weekly/activity lines; {len(task_like)} include "
-            "concrete tasks (assignments, discussions, quizzes, exams, or projects)."
+            "concrete tasks (assignments, discussions, quizzes, exams, or projects). "
+            f"Examples: {sample_refs}."
         )
     return {
         "line_count": len(activity_lines),
@@ -784,7 +856,7 @@ def _weekly_overview(activity_lines: List[dict], assignment_mode: bool) -> dict:
 
 
 def _build_analysis_notes(
-    sections: Dict[str, str], activity_lines: List[dict], assignment_mode: bool
+    sections: Dict[str, str], line_items: List[dict], activity_lines: List[dict], assignment_mode: bool
 ) -> dict:
     outcomes_present = bool(sections.get("Learning Outcomes", "").strip())
     description_present = bool(
@@ -792,29 +864,49 @@ def _build_analysis_notes(
         or sections.get("General", "").strip()
     )
     weekly_present = bool(activity_lines)
+    section_counts: Dict[str, int] = {}
+    for item in line_items:
+        section = item.get("section", "General")
+        section_counts[section] = section_counts.get(section, 0) + 1
+    top_sections = sorted(
+        section_counts.items(),
+        key=lambda pair: pair[1],
+        reverse=True,
+    )
+    section_overview = ", ".join(
+        f"{name} ({count} items)" for name, count in top_sections[:3]
+    )
+    sampled_activity_refs = ", ".join(
+        item.get("source_reference", item.get("section", "General"))
+        for item in activity_lines[:3]
+    )
+    if not sampled_activity_refs:
+        sampled_activity_refs = "No clear assignment task items were detected."
     stage_2_summary = (
-        "Primary scoring emphasis is based on a line-by-line scan of assignment-level tasks "
+        "Primary scoring emphasis is based on your uploaded assignment task lines "
         "(assignments, DQs, quizzes, exams, projects, rubrics, and instructions)."
         if assignment_mode
         else (
-            "Primary scoring emphasis is based on a line-by-line scan of weekly tasks "
+            "Primary scoring emphasis is based on detected weekly/task lines "
             "(assignments, DQs, quizzes, exams, projects, labs, and presentations)."
         )
     )
     return {
         "stage_1": {
-            "title": "Stage 1: Outcomes and course framing",
+            "title": "Stage 1: Uploaded assignment structure scan",
             "summary": (
-                "Reviewed course outcomes/description first to identify declared learning goals."
+                f"Read {len(line_items)} non-empty items from the uploaded document and mapped "
+                f"section structure ({section_overview or 'general text'})."
             ),
             "outcomes_found": outcomes_present,
             "description_found": description_present,
         },
         "stage_2": {
-            "title": "Stage 2: Weekly breakdown and task evidence",
+            "title": "Stage 2: Assignment task evidence scan",
             "summary": stage_2_summary,
             "weekly_found": weekly_present,
             "weekly_line_count": len(activity_lines),
+            "sampled_activity_refs": sampled_activity_refs,
         },
         "mode": "assignment" if assignment_mode else "syllabus",
     }
@@ -929,7 +1021,7 @@ def evaluate_syllabus(
     activity_lines = _collect_activity_lines(line_items, assignment_mode=assignment_mode)
     weekly_summary = _weekly_overview(activity_lines, assignment_mode=assignment_mode)
     analysis_notes = _build_analysis_notes(
-        sections, activity_lines, assignment_mode=assignment_mode
+        sections, line_items, activity_lines, assignment_mode=assignment_mode
     )
     weekly_activity_text_lc = "\n".join([item.get("text", "") for item in activity_lines]).lower()
 
@@ -970,9 +1062,26 @@ def evaluate_syllabus(
                 if isinstance(item.get("line_number"), int)
             }
         )
+        covered_references = sorted(
+            {
+                item.get("line_reference")
+                for item in evidence
+                if item.get("line_reference")
+            }
+        )
         covered_line_text = (
-            ", ".join(str(num) for num in covered_line_numbers)
+            ", ".join(covered_references)
+            if covered_references
+            else ", ".join(str(num) for num in covered_line_numbers)
             if covered_line_numbers
+            else "none"
+        )
+        covered_reference_text = (
+            "; ".join(
+                item.get("source_reference", item.get("line_reference", ""))
+                for item in evidence
+            )
+            if evidence
             else "none"
         )
 
@@ -1007,7 +1116,9 @@ def evaluate_syllabus(
             "great_examples": great_examples,
             "covered_sections": sorted({item.get("section", "General") for item in evidence}),
             "covered_line_numbers": covered_line_numbers,
+            "covered_references": covered_references,
             "covered_line_text": covered_line_text,
+            "covered_reference_text": covered_reference_text,
             "evidence": evidence,
             "placement_targets": competency.placement_targets,
             "suggestions": {
@@ -1058,6 +1169,13 @@ def generate_recommendations(
                 if isinstance(item.get("line_number"), int)
             }
         )
+        covered_references = sorted(
+            {
+                item.get("line_reference")
+                for item in evidence_items
+                if item.get("line_reference")
+            }
+        )
         placements = []
         for target_label in definition.placement_targets:
             plan = _insertion_plan(target_label, sections)
@@ -1071,8 +1189,7 @@ def generate_recommendations(
                     continue
                 present_signals = evidence.get("quality_signals", [])
                 missing_signals = _missing_quality_signals(present_signals)
-                line_number = evidence.get("line_number")
-                line_ref = f"Line {line_number}" if isinstance(line_number, int) else "line not available"
+                source_ref = evidence.get("line_reference", evidence.get("section", "General"))
                 rewrite = _assignment_aligned_rewrite(
                     excerpt,
                     definition.name,
@@ -1080,7 +1197,7 @@ def generate_recommendations(
                     missing_signals,
                 )
                 weekly_task_suggestions.append(
-                    f"Current assignment evidence ({line_ref}):\n"
+                    f"Current assignment evidence ({source_ref}):\n"
                     + excerpt
                     + "\nRecommended improvement:\n"
                     + rewrite
@@ -1089,11 +1206,10 @@ def generate_recommendations(
             if len(weekly_task_suggestions) >= 3:
                 break
             line = item.get("text", "")
-            line_number = item.get("line_number")
-            line_ref = f"Line {line_number}" if isinstance(line_number, int) else "line not available"
+            source_ref = item.get("source_reference", item.get("section", "General"))
             if _contains_task_marker(line):
                 weekly_task_suggestions.append(
-                    f"{line_ref}: {line}\nSuggested addition: {definition.light_template}"
+                    f"{source_ref}: {line}\nSuggested addition: {definition.light_template}"
                 )
         if not weekly_task_suggestions:
             if assignment_mode:
@@ -1113,10 +1229,9 @@ def generate_recommendations(
         if activity_lines:
             for item in activity_lines[:3]:
                 line = item.get("text", "")
-                line_number = item.get("line_number")
-                line_ref = f"Line {line_number}" if isinstance(line_number, int) else "line not available"
+                source_ref = item.get("source_reference", item.get("section", "General"))
                 exemplar_rewrites.append(
-                    f"{line_ref}\n"
+                    f"{source_ref}\n"
                     + _rewrite_activity_line(
                         line,
                         exemplar.get("suggestion_stem", definition.light_template),
@@ -1152,6 +1267,7 @@ def generate_recommendations(
             "great_example_reference": exemplar.get("strong_evidence_example", ""),
             "covered_sections": covered_sections,
             "covered_line_numbers": covered_line_numbers,
+            "covered_references": covered_references,
             "recommendation_confidence": recommendation_confidence,
             "realism_note": realism_note,
             "why": (

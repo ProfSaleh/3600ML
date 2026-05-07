@@ -43,6 +43,8 @@ def test_parse_line_items_tracks_line_numbers_and_sections():
     assert line_items
     first = line_items[0]
     assert first["line_number"] >= 1
+    assert first["item_number"] >= 1
+    assert first["section_item_number"] >= 1
     assert first["section"] in {
         "Learning Outcomes",
         "Assignments",
@@ -74,7 +76,8 @@ def test_evaluate_syllabus_returns_all_competencies():
     assert "line_number" in evidence_item
     assert evidence_item["line_number"] > 0
     assert "line_reference" in evidence_item
-    assert evidence_item["line_reference"].startswith("Line ")
+    assert "item" in evidence_item["line_reference"].lower()
+    assert "source_reference" in evidence_item
     assert "excerpt" in evidence_item
     assert "reason" in evidence_item
     assert "quality_signals" in evidence_item
@@ -103,6 +106,7 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["communication"]["realism_note"]
     assert recommendations["communication"]["covered_sections"]
     assert recommendations["communication"]["covered_line_numbers"]
+    assert recommendations["communication"]["covered_references"]
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,
@@ -151,8 +155,11 @@ def test_suggestions_are_aligned_to_assignment_lines():
     rewrites = recommendations["communication"]["aligned_suggestions"]
     assert rewrites
     assert "source_location" in rewrites[0]
-    assert "Line " in rewrites[0]["source_location"]
+    assert "item" in rewrites[0]["source_location"].lower()
+    assert rewrites[0]["source_reference_detail"]
     assert "suggested_rewrite" in rewrites[0]
+    assert "realistic_example" in rewrites[0]
     assert "apply_location" in rewrites[0]
+    assert "search for" in rewrites[0]["apply_location"].lower()
     assert "missing_signal_prompts" in rewrites[0]
     assert rewrites[0]["alignment_reason"]

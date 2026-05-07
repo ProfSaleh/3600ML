@@ -107,6 +107,12 @@ def test_recommendation_and_render_pipeline():
     assert recommendations["communication"]["covered_sections"]
     assert recommendations["communication"]["covered_line_numbers"]
     assert recommendations["communication"]["covered_references"]
+    assert recommendations["communication"]["quick_pick_options"]
+    assert recommendations["communication"]["option_count"] >= 1
+    quick_pick = recommendations["communication"]["quick_pick_options"][0]
+    assert quick_pick["portfolio_artifact"]
+    assert quick_pick["suggested_insert"]
+    assert "option" in quick_pick["option_label"].lower()
 
     revised = render_revised_syllabus(
         SAMPLE_SYLLABUS,

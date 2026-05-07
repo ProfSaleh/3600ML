@@ -373,6 +373,31 @@ def step_4_recommendations() -> None:
                     "Competency currently covered at: "
                     + ", ".join(payload["covered_references"])
                 )
+            if payload.get("option_count"):
+                st.caption(
+                    f"✨ {payload['option_count']} quick-pick scenario options generated for this competency."
+                )
+            if payload.get("quick_pick_options"):
+                st.markdown("**Quick-pick scenario suggestions (concise + portfolio-ready)**")
+                icons = ["💡", "🚀", "🧩", "📁"]
+                option_cols = st.columns(2)
+                for idx, option in enumerate(payload["quick_pick_options"]):
+                    with option_cols[idx % 2]:
+                        with st.container(border=True):
+                            icon = icons[idx % len(icons)]
+                            st.markdown(
+                                f"{icon} **{option['option_label']}: {option['title']}**"
+                            )
+                            st.caption(option["scenario"])
+                            st.markdown(
+                                f"**Portfolio artifact:** {option['portfolio_artifact']}"
+                            )
+                            st.markdown(
+                                f"**Where to apply:** {option['apply_location']}"
+                            )
+                            st.markdown("**Copy-ready insert:**")
+                            st.code(option["suggested_insert"], language="text")
+                            st.caption(option["appeal_note"])
             st.markdown("**Where to place this competency (exact plan)**")
             for i, placement in enumerate(payload["placements"], start=1):
                 status_emoji = "✅" if placement["status"] == "Found existing section" else "➕"
@@ -386,7 +411,7 @@ def step_4_recommendations() -> None:
                 st.code(placement["copy_ready_text"], language="text")
             st.markdown(f"**Why this location:** {payload['why']}")
             if payload.get("weekly_task_suggestions"):
-                st.markdown("**Assignment-aligned suggestions (priority)**")
+                st.markdown("**Concise assignment-aligned upgrades**")
                 for weekly_suggestion in payload["weekly_task_suggestions"]:
                     st.code(weekly_suggestion, language="text")
             if payload.get("aligned_suggestions"):

@@ -333,6 +333,145 @@ EXEMPLAR_LIBRARY: Dict[str, dict] = {
     },
 }
 
+SCENARIO_OPTION_LIBRARY: Dict[str, List[dict]] = {
+    "career_self_development": [
+        {
+            "title": "Career reflection checkpoint",
+            "scenario": "Students complete a milestone and connect it to internship/career readiness.",
+            "portfolio_artifact": "Professional growth memo + revised action plan",
+        },
+        {
+            "title": "Feedback-to-improvement loop",
+            "scenario": "Students receive feedback and submit a documented revision.",
+            "portfolio_artifact": "Before/after draft with reflection note",
+        },
+        {
+            "title": "Skills map snapshot",
+            "scenario": "Students map assignment skills to a target role.",
+            "portfolio_artifact": "Skills matrix aligned to job posting",
+        },
+    ],
+    "communication": [
+        {
+            "title": "Client-facing brief",
+            "scenario": "Students communicate recommendations to a non-technical audience.",
+            "portfolio_artifact": "2-page policy/client brief",
+        },
+        {
+            "title": "Executive summary pitch",
+            "scenario": "Students present key findings in a time-limited briefing.",
+            "portfolio_artifact": "Slide deck + 3-minute pitch recording",
+        },
+        {
+            "title": "Audience adaptation task",
+            "scenario": "Students rewrite the same message for two audiences.",
+            "portfolio_artifact": "Dual-audience communication sample",
+        },
+    ],
+    "critical_thinking": [
+        {
+            "title": "Evidence trade-off analysis",
+            "scenario": "Students compare two data/evidence sources and defend a choice.",
+            "portfolio_artifact": "Decision memo with evidence matrix",
+        },
+        {
+            "title": "Case decision justification",
+            "scenario": "Students evaluate a complex case and justify recommendations.",
+            "portfolio_artifact": "Case analysis report",
+        },
+        {
+            "title": "Alternative solution critique",
+            "scenario": "Students critique one proposed solution and improve it.",
+            "portfolio_artifact": "Annotated critique document",
+        },
+    ],
+    "equity_inclusion": [
+        {
+            "title": "Inclusive impact lens",
+            "scenario": "Students assess how a decision affects different communities.",
+            "portfolio_artifact": "Inclusive impact statement",
+        },
+        {
+            "title": "Bias check prompt",
+            "scenario": "Students identify one potential bias and propose mitigation.",
+            "portfolio_artifact": "Bias-and-mitigation reflection",
+        },
+        {
+            "title": "Accessibility revision",
+            "scenario": "Students revise deliverables for accessibility/usability.",
+            "portfolio_artifact": "Accessibility revision log",
+        },
+    ],
+    "leadership": [
+        {
+            "title": "Rotating team lead",
+            "scenario": "Students rotate team-lead roles across project milestones.",
+            "portfolio_artifact": "Leadership log with milestone decisions",
+        },
+        {
+            "title": "Facilitation checkpoint",
+            "scenario": "Students facilitate a meeting and document outcomes.",
+            "portfolio_artifact": "Meeting agenda + facilitation notes",
+        },
+        {
+            "title": "Accountability tracker",
+            "scenario": "Students assign roles and track task ownership.",
+            "portfolio_artifact": "Team responsibility matrix",
+        },
+    ],
+    "professionalism": [
+        {
+            "title": "Quality standards clause",
+            "scenario": "Students submit work against explicit quality criteria.",
+            "portfolio_artifact": "Rubric-scored submission",
+        },
+        {
+            "title": "Deadline accountability",
+            "scenario": "Students submit on time and document completion workflow.",
+            "portfolio_artifact": "Submission timeline record",
+        },
+        {
+            "title": "Ethical practice note",
+            "scenario": "Students explain ethical considerations in their solution.",
+            "portfolio_artifact": "Ethics statement addendum",
+        },
+    ],
+    "teamwork": [
+        {
+            "title": "Peer feedback sprint",
+            "scenario": "Students exchange structured peer feedback before final delivery.",
+            "portfolio_artifact": "Peer feedback packet",
+        },
+        {
+            "title": "Conflict-resolution protocol",
+            "scenario": "Teams document and resolve one coordination issue.",
+            "portfolio_artifact": "Team process retrospective",
+        },
+        {
+            "title": "Contribution transparency",
+            "scenario": "Teams log individual contributions across milestones.",
+            "portfolio_artifact": "Contribution tracker",
+        },
+    ],
+    "technology": [
+        {
+            "title": "Tool workflow demonstration",
+            "scenario": "Students use a digital tool and justify configuration choices.",
+            "portfolio_artifact": "Workflow screenshot set + method note",
+        },
+        {
+            "title": "Data interpretation brief",
+            "scenario": "Students interpret tool output and explain limitations.",
+            "portfolio_artifact": "Data interpretation memo",
+        },
+        {
+            "title": "Ethical tech checkpoint",
+            "scenario": "Students evaluate privacy/ethics trade-offs in tool usage.",
+            "portfolio_artifact": "Privacy and ethics review note",
+        },
+    ],
+}
+
 QUALITY_SIGNAL_TERMS = {
     "measurable_verb": ("analyze", "evaluate", "create", "design", "develop", "justify", "apply"),
     "deliverable": ("submit", "brief", "report", "memo", "presentation", "project", "quiz", "exam"),
@@ -429,6 +568,67 @@ def _realistic_assignment_example(
         f"and grading should explicitly evaluate {competency_name.lower()} performance. "
         f"{suggestion_stem}\""
     )
+
+
+def _concise_assignment_insert(
+    suggestion_stem: str,
+    scenario: str,
+    portfolio_artifact: str,
+) -> str:
+    return (
+        f"Students will {scenario.lower()} Deliverable: {portfolio_artifact}. "
+        f"Assess with a short rubric (clarity, evidence, application). {suggestion_stem}"
+    )
+
+
+def _build_quick_pick_options(
+    competency_key: str,
+    competency: CompetencyDefinition,
+    evidence_items: List[dict],
+    activity_lines: List[dict],
+) -> List[dict]:
+    options = SCENARIO_OPTION_LIBRARY.get(competency_key, [])
+    if not options:
+        return []
+
+    anchor_ref = "Assignments item 1"
+    anchor_excerpt = ""
+    if evidence_items:
+        anchor_ref = evidence_items[0].get("line_reference", anchor_ref)
+        anchor_excerpt = evidence_items[0].get("excerpt", "")
+    elif activity_lines:
+        anchor_ref = activity_lines[0].get("source_reference", anchor_ref)
+        anchor_excerpt = activity_lines[0].get("text", "")
+
+    suggestion_stem = EXEMPLAR_LIBRARY.get(competency_key, {}).get(
+        "suggestion_stem",
+        competency.light_template,
+    )
+    quick_picks: List[dict] = []
+    for index, option in enumerate(options[:4], start=1):
+        quick_picks.append(
+            {
+                "option_label": f"Option {index}",
+                "title": option["title"],
+                "scenario": option["scenario"],
+                "portfolio_artifact": option["portfolio_artifact"],
+                "suggested_insert": _concise_assignment_insert(
+                    suggestion_stem,
+                    option["scenario"],
+                    option["portfolio_artifact"],
+                ),
+                "apply_location": (
+                    f"Add this near {anchor_ref}"
+                    + (f", next to: \"{_preview(anchor_excerpt, 70)}\"" if anchor_excerpt else ".")
+                ),
+                "appeal_note": (
+                    "Portfolio-ready: students can showcase this artifact as evidence of "
+                    f"{competency.name.lower()}."
+                ),
+            }
+        )
+
+    return quick_picks
 
 
 def _assignment_aligned_rewrite(
@@ -1197,10 +1397,7 @@ def generate_recommendations(
                     missing_signals,
                 )
                 weekly_task_suggestions.append(
-                    f"Current assignment evidence ({source_ref}):\n"
-                    + excerpt
-                    + "\nRecommended improvement:\n"
-                    + rewrite
+                    f"{source_ref}: {excerpt}\nQuick upgrade: {rewrite}"
                 )
         for item in activity_lines[:10]:
             if len(weekly_task_suggestions) >= 3:
@@ -1224,6 +1421,12 @@ def generate_recommendations(
                 ]
         aligned_suggestions = _build_assignment_aligned_suggestions(
             key, definition, evidence_items, activity_lines
+        )
+        quick_pick_options = _build_quick_pick_options(
+            key,
+            definition,
+            evidence_items,
+            activity_lines,
         )
         exemplar_rewrites: List[str] = []
         if activity_lines:
@@ -1263,6 +1466,7 @@ def generate_recommendations(
             "placements": placements,
             "weekly_task_suggestions": weekly_task_suggestions,
             "aligned_suggestions": aligned_suggestions,
+            "quick_pick_options": quick_pick_options,
             "exemplar_rewrites": exemplar_rewrites,
             "great_example_reference": exemplar.get("strong_evidence_example", ""),
             "covered_sections": covered_sections,
@@ -1270,6 +1474,7 @@ def generate_recommendations(
             "covered_references": covered_references,
             "recommendation_confidence": recommendation_confidence,
             "realism_note": realism_note,
+            "option_count": len(quick_pick_options),
             "why": (
                 "These sections are where this competency is usually made explicit. "
                 "Weekly tasks are prioritized so competency evidence is visible in day-to-day coursework."

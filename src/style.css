@@ -1,0 +1,38 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #08141f;
+  color: #f4f8fc;
+}
+
+canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  padding: 1rem;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+}
+
+#hud h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+#hud p {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+}

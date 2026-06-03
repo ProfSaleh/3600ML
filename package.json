@@ -1,7 +1,7 @@
 {
-  "name": "threejs-car-dodging-game",
+  "name": "research-hub",
   "version": "1.0.0",
-  "description": "2D-style car dodging game built with Three.js",
+  "description": "Research Hub app for managing research papers and collaborators",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,15 +10,14 @@
     "preview": "vite preview"
   },
   "keywords": [
-    "threejs",
-    "game",
+    "research",
+    "repository",
+    "productivity",
     "vite"
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "three": "^0.181.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "vite": "^7.2.1"
   }

@@ -3,15 +3,137 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Three.js Car Dodger</title>
+    <title>Research Hub</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div id="hud">
-      <h1>Car Dodger</h1>
-      <p id="score">Score: 0</p>
-      <p id="status">Use ← and → to dodge traffic</p>
-    </div>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <h1>Research Hub</h1>
+          <p>Centralize your papers, collaborators, updates, and journal rules in one repository.</p>
+        </div>
+        <p class="storage-pill">Data is stored locally in your browser.</p>
+      </header>
+
+      <section class="card" aria-labelledby="overview-heading">
+        <h2 id="overview-heading">Overview</h2>
+        <div id="overview-grid" class="overview-grid"></div>
+      </section>
+
+      <section class="layout-grid">
+        <article class="card" aria-labelledby="collaborators-heading">
+          <h2 id="collaborators-heading">Collaborators</h2>
+          <form id="collaborator-form" class="stacked-form">
+            <label>
+              Full name
+              <input id="collaborator-name" name="name" type="text" required />
+            </label>
+            <label>
+              Email
+              <input id="collaborator-email" name="email" type="email" required />
+            </label>
+            <label>
+              Role
+              <input id="collaborator-role" name="role" type="text" placeholder="Co-author, Advisor..." required />
+            </label>
+            <button type="submit" class="btn primary">Add collaborator</button>
+          </form>
+          <div id="collaborators-list" class="list-container"></div>
+        </article>
+
+        <article class="card" aria-labelledby="research-heading">
+          <h2 id="research-heading">Add Research Item</h2>
+          <form id="research-form" class="stacked-form">
+            <label>
+              Title
+              <input id="research-title" name="title" type="text" required />
+            </label>
+            <label>
+              Journal / conference
+              <input id="research-journal" name="journal" type="text" required />
+            </label>
+            <label>
+              Lead collaborator
+              <select id="research-collaborator" name="leadCollaboratorId"></select>
+            </label>
+            <label>
+              Status
+              <select id="research-status" name="status"></select>
+            </label>
+            <label>
+              Guideline reference
+              <select id="research-guideline" name="guidelineId"></select>
+            </label>
+            <label>
+              Research summary
+              <textarea id="research-summary" name="summary" rows="4" placeholder="Abstract, focus area, key hypotheses..." required></textarea>
+            </label>
+            <label>
+              Upload document (optional, max 1.5 MB)
+              <input id="research-document" name="document" type="file" />
+            </label>
+            <button type="submit" class="btn primary">Add research</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="card" aria-labelledby="repository-heading">
+        <div class="section-header">
+          <h2 id="repository-heading">Research Repository</h2>
+          <div class="filters">
+            <label>
+              Search
+              <input id="search-input" type="search" placeholder="Title, summary, journal..." />
+            </label>
+            <label>
+              Status filter
+              <select id="status-filter"></select>
+            </label>
+          </div>
+        </div>
+        <div id="research-list" class="list-container"></div>
+      </section>
+
+      <section class="layout-grid">
+        <article class="card" aria-labelledby="guidelines-heading">
+          <h2 id="guidelines-heading">Journal Guidelines</h2>
+          <form id="guideline-form" class="stacked-form">
+            <label>
+              Journal name
+              <input id="guideline-journal" name="journal" type="text" required />
+            </label>
+            <label>
+              Submission URL
+              <input id="guideline-url" name="url" type="url" placeholder="https://..." />
+            </label>
+            <label>
+              Word limit
+              <input id="guideline-word-limit" name="wordLimit" type="text" placeholder="e.g., 7000 words" />
+            </label>
+            <label>
+              Citation style
+              <input id="guideline-citation" name="citationStyle" type="text" placeholder="APA, IEEE..." />
+            </label>
+            <label>
+              Notes
+              <textarea id="guideline-notes" name="notes" rows="3" placeholder="Formatting, supplementary materials, review cycle..."></textarea>
+            </label>
+            <button type="submit" class="btn primary">Add guideline</button>
+          </form>
+        </article>
+
+        <article class="card" aria-labelledby="guidelines-list-heading">
+          <h2 id="guidelines-list-heading">Guideline Library</h2>
+          <div id="guidelines-list" class="list-container"></div>
+        </article>
+      </section>
+    </main>
+
+    <template id="empty-state-template">
+      <p class="empty-state">No entries yet.</p>
+    </template>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

@@ -1,229 +1,528 @@
-import * as THREE from "three";
+const STORAGE_KEY = "research-hub-state-v1";
+const MAX_DOCUMENT_BYTES = 1_500_000;
+const STATUS_OPTIONS = [
+  "Draft",
+  "Under Review",
+  "Waiting for Recommendations",
+  "Revisions Required",
+  "Accepted",
+  "Published",
+  "On Hold"
+];
 
-const LANE_X = [-3, 0, 3];
-const ROAD_BOUNDS_Y = 12;
+const DEFAULT_GUIDELINES = [
+  {
+    id: "guideline-nature",
+    journal: "Nature",
+    url: "https://www.nature.com/nature/for-authors/formatting-guide",
+    wordLimit: "Main text typically up to 3,000 words",
+    citationStyle: "Numbered references",
+    notes: "A concise abstract is required and methods often go to supplementary information."
+  },
+  {
+    id: "guideline-ieee",
+    journal: "IEEE Transactions",
+    url: "https://journals.ieeeauthorcenter.ieee.org/",
+    wordLimit: "Varies by journal",
+    citationStyle: "IEEE",
+    notes: "Use IEEE templates and follow strict figure resolution requirements."
+  },
+  {
+    id: "guideline-plos",
+    journal: "PLOS ONE",
+    url: "https://journals.plos.org/plosone/s/submission-guidelines",
+    wordLimit: "No strict word limit",
+    citationStyle: "Vancouver style",
+    notes: "Data availability statement and ethics statements are mandatory when relevant."
+  }
+];
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x08141f);
+const elements = {
+  overviewGrid: document.getElementById("overview-grid"),
+  collaboratorForm: document.getElementById("collaborator-form"),
+  collaboratorsList: document.getElementById("collaborators-list"),
+  researchForm: document.getElementById("research-form"),
+  researchCollaborator: document.getElementById("research-collaborator"),
+  researchStatus: document.getElementById("research-status"),
+  researchGuideline: document.getElementById("research-guideline"),
+  searchInput: document.getElementById("search-input"),
+  statusFilter: document.getElementById("status-filter"),
+  researchList: document.getElementById("research-list"),
+  guidelineForm: document.getElementById("guideline-form"),
+  guidelinesList: document.getElementById("guidelines-list")
+};
 
-const camera = new THREE.OrthographicCamera(-8, 8, 8, -8, 0.1, 100);
-camera.position.set(0, 0, 20);
-camera.lookAt(0, 0, 0);
+const state = loadState();
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+bindEvents();
+renderAll();
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-scene.add(ambientLight);
+function bindEvents() {
+  elements.collaboratorForm.addEventListener("submit", handleAddCollaborator);
+  elements.researchForm.addEventListener("submit", handleAddResearch);
+  elements.guidelineForm.addEventListener("submit", handleAddGuideline);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-directionalLight.position.set(0, 8, 14);
-scene.add(directionalLight);
+  elements.collaboratorsList.addEventListener("click", handleCollaboratorActions);
+  elements.researchList.addEventListener("click", handleResearchActions);
+  elements.researchList.addEventListener("change", handleResearchStatusChange);
+  elements.guidelinesList.addEventListener("click", handleGuidelineActions);
 
-const road = new THREE.Mesh(
-  new THREE.PlaneGeometry(10, ROAD_BOUNDS_Y * 2 + 2),
-  new THREE.MeshPhongMaterial({ color: 0x32373b })
-);
-scene.add(road);
+  elements.searchInput.addEventListener("input", renderResearchList);
+  elements.statusFilter.addEventListener("change", renderResearchList);
+}
 
-const shoulderMaterial = new THREE.MeshPhongMaterial({ color: 0x8f999f });
-const leftShoulder = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 26), shoulderMaterial);
-leftShoulder.position.x = -5.2;
-leftShoulder.position.z = 0.01;
-scene.add(leftShoulder);
+function loadState() {
+  const fallback = {
+    collaborators: [],
+    research: [],
+    guidelines: structuredClone(DEFAULT_GUIDELINES)
+  };
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return fallback;
+  }
 
-const rightShoulder = leftShoulder.clone();
-rightShoulder.position.x = 5.2;
-scene.add(rightShoulder);
-
-const laneMarkers = [];
-const laneMarkerGeometry = new THREE.PlaneGeometry(0.25, 1.8);
-const laneMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xf8f7de });
-const markerColumns = [-1.5, 1.5];
-for (const columnX of markerColumns) {
-  for (let y = -12; y <= 12; y += 3.2) {
-    const marker = new THREE.Mesh(laneMarkerGeometry, laneMarkerMaterial);
-    marker.position.set(columnX, y, 0.02);
-    laneMarkers.push(marker);
-    scene.add(marker);
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      collaborators: Array.isArray(parsed.collaborators) ? parsed.collaborators : [],
+      research: Array.isArray(parsed.research) ? parsed.research : [],
+      guidelines:
+        Array.isArray(parsed.guidelines) && parsed.guidelines.length > 0
+          ? parsed.guidelines
+          : structuredClone(DEFAULT_GUIDELINES)
+    };
+  } catch {
+    return fallback;
   }
 }
 
-const scoreEl = document.getElementById("score");
-const statusEl = document.getElementById("status");
-
-function buildCar(color) {
-  const group = new THREE.Group();
-
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(1.6, 2.8, 0.6),
-    new THREE.MeshPhongMaterial({ color })
-  );
-  body.position.z = 0.35;
-  group.add(body);
-
-  const cabin = new THREE.Mesh(
-    new THREE.BoxGeometry(1.1, 1.2, 0.45),
-    new THREE.MeshPhongMaterial({ color: 0xe8f0ff })
-  );
-  cabin.position.set(0, 0.25, 0.85);
-  group.add(cabin);
-
-  const bumper = new THREE.Mesh(
-    new THREE.BoxGeometry(1.45, 0.3, 0.14),
-    new THREE.MeshPhongMaterial({ color: 0x111111 })
-  );
-  bumper.position.set(0, 1.35, 0.25);
-  group.add(bumper);
-
-  const rearBumper = bumper.clone();
-  rearBumper.position.y = -1.35;
-  group.add(rearBumper);
-
-  return group;
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-const player = buildCar(0x1d9bf0);
-scene.add(player);
-
-let playerLane = 1;
-let playerTargetX = LANE_X[playerLane];
-player.position.set(playerTargetX, -8.2, 0);
-
-const obstacles = [];
-const obstacleColors = [0xef4444, 0xf97316, 0xa855f7, 0x22c55e, 0xfacc15];
-let spawnCooldown = 0.8;
-let spawnTimer = 0;
-let score = 0;
-let gameOver = false;
-
-const playerBox = new THREE.Box3();
-const obstacleBox = new THREE.Box3();
-const clock = new THREE.Clock();
-
-function randomItem(list) {
-  return list[Math.floor(Math.random() * list.length)];
+function renderAll() {
+  renderStatusSelects();
+  renderCollaboratorOptions();
+  renderGuidelineOptions();
+  renderOverview();
+  renderCollaboratorsList();
+  renderResearchList();
+  renderGuidelinesList();
 }
 
-function spawnObstacle() {
-  const obstacle = buildCar(randomItem(obstacleColors));
-  const lane = Math.floor(Math.random() * LANE_X.length);
-  obstacle.position.set(LANE_X[lane], ROAD_BOUNDS_Y + 2.5, 0);
-  obstacle.userData.speed = 7 + Math.random() * 3 + Math.min(score * 0.02, 3);
-  obstacles.push(obstacle);
-  scene.add(obstacle);
+function renderStatusSelects() {
+  const researchStatusOptions = STATUS_OPTIONS.map((status) => `<option value="${status}">${status}</option>`).join("");
+  elements.researchStatus.innerHTML = researchStatusOptions;
+  elements.researchStatus.value = "Draft";
+
+  const filterOptions = ['<option value="all">All statuses</option>']
+    .concat(STATUS_OPTIONS.map((status) => `<option value="${status}">${status}</option>`))
+    .join("");
+  elements.statusFilter.innerHTML = filterOptions;
 }
 
-function clearObstacles() {
-  for (const obstacle of obstacles) {
-    scene.remove(obstacle);
-  }
-  obstacles.length = 0;
-}
-
-function resetGame() {
-  clearObstacles();
-  playerLane = 1;
-  playerTargetX = LANE_X[playerLane];
-  player.position.set(playerTargetX, -8.2, 0);
-  score = 0;
-  spawnTimer = 0;
-  spawnCooldown = 0.8;
-  gameOver = false;
-  scoreEl.textContent = "Score: 0";
-  statusEl.textContent = "Use ← and → to dodge traffic";
-}
-
-function endGame() {
-  gameOver = true;
-  statusEl.textContent = "Crash! Press R or Space to restart";
-}
-
-function updateCameraBounds() {
-  const aspect = window.innerWidth / window.innerHeight;
-  const halfHeight = 8;
-  camera.top = halfHeight;
-  camera.bottom = -halfHeight;
-  camera.left = -halfHeight * aspect;
-  camera.right = halfHeight * aspect;
-  camera.updateProjectionMatrix();
-}
-
-window.addEventListener("resize", () => {
-  updateCameraBounds();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-});
-
-window.addEventListener("keydown", (event) => {
-  if (gameOver && (event.code === "Space" || event.code === "KeyR")) {
-    resetGame();
+function renderCollaboratorOptions() {
+  if (state.collaborators.length === 0) {
+    elements.researchCollaborator.innerHTML = '<option value="">No collaborator assigned</option>';
     return;
   }
 
-  if (gameOver) {
+  const options = ['<option value="">No collaborator assigned</option>']
+    .concat(
+      state.collaborators.map(
+        (collaborator) =>
+          `<option value="${collaborator.id}">${escapeHtml(collaborator.name)} (${escapeHtml(collaborator.role)})</option>`
+      )
+    )
+    .join("");
+
+  elements.researchCollaborator.innerHTML = options;
+}
+
+function renderGuidelineOptions() {
+  const options = ['<option value="">No specific guideline</option>']
+    .concat(
+      state.guidelines.map(
+        (guideline) => `<option value="${guideline.id}">${escapeHtml(guideline.journal)}</option>`
+      )
+    )
+    .join("");
+
+  elements.researchGuideline.innerHTML = options;
+}
+
+function renderOverview() {
+  const underReviewCount = state.research.filter(
+    (item) => item.status === "Under Review" || item.status === "Waiting for Recommendations"
+  ).length;
+  const publishedCount = state.research.filter((item) => item.status === "Published").length;
+  const revisionsCount = state.research.filter((item) => item.revisions.length > 0).length;
+  const cards = [
+    { label: "Total research items", value: state.research.length },
+    { label: "Collaborators", value: state.collaborators.length },
+    { label: "In review workflow", value: underReviewCount },
+    { label: "Published", value: publishedCount },
+    { label: "With revisions logged", value: revisionsCount }
+  ];
+
+  elements.overviewGrid.innerHTML = cards
+    .map(
+      (card) => `
+      <article class="stat-card">
+        <p>${card.label}</p>
+        <strong>${card.value}</strong>
+      </article>
+    `
+    )
+    .join("");
+}
+
+function renderCollaboratorsList() {
+  if (state.collaborators.length === 0) {
+    elements.collaboratorsList.innerHTML = '<p class="empty-state">No collaborators yet.</p>';
     return;
   }
 
-  if (event.code === "ArrowLeft" || event.code === "KeyA") {
-    playerLane = Math.max(0, playerLane - 1);
-    playerTargetX = LANE_X[playerLane];
-  }
-  if (event.code === "ArrowRight" || event.code === "KeyD") {
-    playerLane = Math.min(LANE_X.length - 1, playerLane + 1);
-    playerTargetX = LANE_X[playerLane];
-  }
-});
-
-updateCameraBounds();
-
-function animate() {
-  const delta = Math.min(clock.getDelta(), 0.05);
-
-  for (const marker of laneMarkers) {
-    marker.position.y -= delta * 7;
-    if (marker.position.y < -ROAD_BOUNDS_Y - 1) {
-      marker.position.y += ROAD_BOUNDS_Y * 2 + 2;
-    }
-  }
-
-  if (!gameOver) {
-    const targetOffset = playerTargetX - player.position.x;
-    player.position.x += targetOffset * Math.min(1, delta * 14);
-
-    spawnTimer -= delta;
-    if (spawnTimer <= 0) {
-      spawnObstacle();
-      spawnCooldown = Math.max(0.38, spawnCooldown - 0.01);
-      spawnTimer = spawnCooldown;
-    }
-
-    playerBox.setFromObject(player);
-
-    for (let i = obstacles.length - 1; i >= 0; i -= 1) {
-      const obstacle = obstacles[i];
-      obstacle.position.y -= obstacle.userData.speed * delta;
-
-      obstacleBox.setFromObject(obstacle);
-      if (playerBox.intersectsBox(obstacleBox)) {
-        endGame();
-        break;
-      }
-
-      if (obstacle.position.y < -ROAD_BOUNDS_Y - 4) {
-        scene.remove(obstacle);
-        obstacles.splice(i, 1);
-      }
-    }
-
-    score += delta * 12;
-    scoreEl.textContent = `Score: ${Math.floor(score)}`;
-  }
-
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  elements.collaboratorsList.innerHTML = state.collaborators
+    .map(
+      (collaborator) => `
+      <article class="list-row">
+        <div>
+          <h3>${escapeHtml(collaborator.name)}</h3>
+          <p>${escapeHtml(collaborator.email)} · ${escapeHtml(collaborator.role)}</p>
+        </div>
+        <button class="btn danger" data-action="remove-collaborator" data-id="${collaborator.id}" type="button">
+          Remove
+        </button>
+      </article>
+    `
+    )
+    .join("");
 }
 
-animate();
+function renderResearchList() {
+  const statusFilter = elements.statusFilter.value;
+  const query = elements.searchInput.value.trim().toLowerCase();
+
+  const filteredResearch = state.research
+    .filter((item) => statusFilter === "all" || item.status === statusFilter)
+    .filter((item) => {
+      if (!query) {
+        return true;
+      }
+      const blob = [item.title, item.journal, item.summary, getCollaboratorName(item.leadCollaboratorId)]
+        .join(" ")
+        .toLowerCase();
+      return blob.includes(query);
+    })
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  if (filteredResearch.length === 0) {
+    elements.researchList.innerHTML = '<p class="empty-state">No research records match your filters.</p>';
+    return;
+  }
+
+  elements.researchList.innerHTML = filteredResearch
+    .map((item) => {
+      const statusClassName = `status-${item.status.toLowerCase().replace(/\s+/g, "-")}`;
+      const revisionItems =
+        item.revisions.length === 0
+          ? "<li>No revisions logged yet.</li>"
+          : item.revisions
+              .slice()
+              .reverse()
+              .map((revision) => `<li><strong>${formatDate(revision.at)}</strong> - ${escapeHtml(revision.note)}</li>`)
+              .join("");
+      const guideline = getGuideline(item.guidelineId);
+      const guidelineText = guideline ? guideline.journal : "None";
+      const documentMarkup = item.document
+        ? `<a class="inline-link" href="${item.document.dataUrl}" download="${escapeHtml(item.document.name)}">Download: ${escapeHtml(item.document.name)}</a>`
+        : "<span class=\"muted\">No file uploaded</span>";
+
+      return `
+      <article class="research-card">
+        <div class="research-heading">
+          <div>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml(item.journal)} · Lead: ${escapeHtml(getCollaboratorName(item.leadCollaboratorId))}</p>
+          </div>
+          <span class="status-badge ${statusClassName}">${escapeHtml(item.status)}</span>
+        </div>
+        <p>${escapeHtml(item.summary)}</p>
+        <p class="meta-line">
+          Guideline: ${escapeHtml(guidelineText)} · Last updated: ${formatDate(item.updatedAt)}
+        </p>
+        <p class="meta-line">${documentMarkup}</p>
+        <div class="row-controls">
+          <label>
+            Update status
+            <select class="inline-status-select" data-id="${item.id}">
+              ${STATUS_OPTIONS.map(
+                (status) =>
+                  `<option value="${status}" ${status === item.status ? "selected" : ""}>${status}</option>`
+              ).join("")}
+            </select>
+          </label>
+          <button class="btn subtle" data-action="add-revision" data-id="${item.id}" type="button">
+            Add revision note
+          </button>
+          <button class="btn danger" data-action="remove-research" data-id="${item.id}" type="button">
+            Remove
+          </button>
+        </div>
+        <details>
+          <summary>Revision history (${item.revisions.length})</summary>
+          <ul class="revision-list">${revisionItems}</ul>
+        </details>
+      </article>
+    `;
+    })
+    .join("");
+}
+
+function renderGuidelinesList() {
+  if (state.guidelines.length === 0) {
+    elements.guidelinesList.innerHTML = '<p class="empty-state">No guidelines configured.</p>';
+    return;
+  }
+
+  elements.guidelinesList.innerHTML = state.guidelines
+    .map(
+      (guideline) => `
+      <article class="guideline-card">
+        <div class="guideline-header">
+          <h3>${escapeHtml(guideline.journal)}</h3>
+          <button class="btn danger" data-action="remove-guideline" data-id="${guideline.id}" type="button">
+            Remove
+          </button>
+        </div>
+        <p><strong>Word limit:</strong> ${escapeHtml(guideline.wordLimit || "Not specified")}</p>
+        <p><strong>Citation style:</strong> ${escapeHtml(guideline.citationStyle || "Not specified")}</p>
+        <p>${escapeHtml(guideline.notes || "No additional notes.")}</p>
+        ${
+          guideline.url
+            ? `<a class="inline-link" href="${escapeHtml(guideline.url)}" target="_blank" rel="noreferrer">Open submission page</a>`
+            : ""
+        }
+      </article>
+    `
+    )
+    .join("");
+}
+
+function handleAddCollaborator(event) {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const collaborator = {
+    id: createId("collab"),
+    name: String(formData.get("name") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim(),
+    role: String(formData.get("role") ?? "").trim()
+  };
+
+  if (!collaborator.name || !collaborator.email || !collaborator.role) {
+    return;
+  }
+
+  state.collaborators.push(collaborator);
+  saveState();
+  event.currentTarget.reset();
+  renderAll();
+}
+
+async function handleAddResearch(event) {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+
+  const fileInput = document.getElementById("research-document");
+  const file = fileInput.files?.[0];
+  const document = await readDocument(file);
+
+  const item = {
+    id: createId("research"),
+    title: String(formData.get("title") ?? "").trim(),
+    journal: String(formData.get("journal") ?? "").trim(),
+    leadCollaboratorId: String(formData.get("leadCollaboratorId") ?? ""),
+    status: String(formData.get("status") ?? "Draft"),
+    guidelineId: String(formData.get("guidelineId") ?? ""),
+    summary: String(formData.get("summary") ?? "").trim(),
+    document,
+    revisions: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (!item.title || !item.summary || !item.journal) {
+    return;
+  }
+
+  state.research.unshift(item);
+  saveState();
+  event.currentTarget.reset();
+  elements.researchStatus.value = "Draft";
+  renderAll();
+}
+
+function handleAddGuideline(event) {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const guideline = {
+    id: createId("guideline"),
+    journal: String(formData.get("journal") ?? "").trim(),
+    url: String(formData.get("url") ?? "").trim(),
+    wordLimit: String(formData.get("wordLimit") ?? "").trim(),
+    citationStyle: String(formData.get("citationStyle") ?? "").trim(),
+    notes: String(formData.get("notes") ?? "").trim()
+  };
+
+  if (!guideline.journal) {
+    return;
+  }
+
+  state.guidelines.unshift(guideline);
+  saveState();
+  event.currentTarget.reset();
+  renderAll();
+}
+
+function handleCollaboratorActions(event) {
+  const button = event.target.closest("button[data-action='remove-collaborator']");
+  if (!button) {
+    return;
+  }
+  const collaboratorId = button.dataset.id;
+  state.collaborators = state.collaborators.filter((collaborator) => collaborator.id !== collaboratorId);
+  for (const research of state.research) {
+    if (research.leadCollaboratorId === collaboratorId) {
+      research.leadCollaboratorId = "";
+      research.updatedAt = new Date().toISOString();
+    }
+  }
+  saveState();
+  renderAll();
+}
+
+function handleResearchActions(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) {
+    return;
+  }
+
+  const action = button.dataset.action;
+  const researchId = button.dataset.id;
+  const research = state.research.find((item) => item.id === researchId);
+  if (!research) {
+    return;
+  }
+
+  if (action === "remove-research") {
+    state.research = state.research.filter((item) => item.id !== researchId);
+  }
+
+  if (action === "add-revision") {
+    const note = window.prompt("Add a revision or update note:");
+    if (note && note.trim()) {
+      research.revisions.push({
+        id: createId("revision"),
+        at: new Date().toISOString(),
+        note: note.trim()
+      });
+      research.updatedAt = new Date().toISOString();
+    }
+  }
+
+  saveState();
+  renderAll();
+}
+
+function handleResearchStatusChange(event) {
+  const select = event.target.closest(".inline-status-select");
+  if (!select) {
+    return;
+  }
+  const research = state.research.find((item) => item.id === select.dataset.id);
+  if (!research) {
+    return;
+  }
+  research.status = select.value;
+  research.updatedAt = new Date().toISOString();
+  saveState();
+  renderAll();
+}
+
+function handleGuidelineActions(event) {
+  const button = event.target.closest("button[data-action='remove-guideline']");
+  if (!button) {
+    return;
+  }
+  const guidelineId = button.dataset.id;
+  state.guidelines = state.guidelines.filter((guideline) => guideline.id !== guidelineId);
+  for (const research of state.research) {
+    if (research.guidelineId === guidelineId) {
+      research.guidelineId = "";
+      research.updatedAt = new Date().toISOString();
+    }
+  }
+  saveState();
+  renderAll();
+}
+
+function getCollaboratorName(collaboratorId) {
+  if (!collaboratorId) {
+    return "Unassigned";
+  }
+  const collaborator = state.collaborators.find((item) => item.id === collaboratorId);
+  return collaborator ? collaborator.name : "Unassigned";
+}
+
+function getGuideline(guidelineId) {
+  if (!guidelineId) {
+    return null;
+  }
+  return state.guidelines.find((guideline) => guideline.id === guidelineId) ?? null;
+}
+
+async function readDocument(file) {
+  if (!file) {
+    return null;
+  }
+  if (file.size > MAX_DOCUMENT_BYTES) {
+    window.alert("Document is too large for local browser storage. Use a file under 1.5 MB.");
+    return null;
+  }
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("File reading failed."));
+    reader.readAsDataURL(file);
+  });
+
+  return {
+    name: file.name,
+    type: file.type || "application/octet-stream",
+    dataUrl
+  };
+}
+
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function formatDate(isoString) {
+  const parsed = new Date(isoString);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+  return parsed.toLocaleString();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}

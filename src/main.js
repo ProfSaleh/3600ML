@@ -34,7 +34,7 @@ const lessons = [
   {
     eyebrow: "Lesson 1",
     title: "Understand the spectrum",
-    time: "8 min",
+    tag: "Core idea",
     summary:
       "See why the difference between casual AI coding and production engineering is not whether you use AI; it is how you verify the output.",
     bullets: ["Vibe coding loop", "Agentic verification", "BBQ vs Michelin kitchen analogy"],
@@ -42,7 +42,7 @@ const lessons = [
   {
     eyebrow: "Lesson 2",
     title: "Engineer context",
-    time: "12 min",
+    tag: "Context",
     summary:
       "Balance instructions, knowledge, memory, examples, tools, and guardrails without causing context rot.",
     bullets: ["Static vs dynamic context", "Agent skills", "Backpack analogy"],
@@ -50,7 +50,7 @@ const lessons = [
   {
     eyebrow: "Lesson 3",
     title: "Build the harness",
-    time: "14 min",
+    tag: "Harness",
     summary:
       "Learn why the model is only part of the system and why sandboxes, orchestration, and observability create reliable agents.",
     bullets: ["Model plus harness", "Agent drift", "Quality control sensors"],
@@ -58,7 +58,7 @@ const lessons = [
   {
     eyebrow: "Lesson 4",
     title: "Work like a modern engineer",
-    time: "10 min",
+    tag: "Workflow",
     summary:
       "Practice switching between conductor mode for real-time guidance and orchestrator mode for delegated agent work.",
     bullets: ["The 80% problem", "Human judgment", "Token economy"],
@@ -144,75 +144,191 @@ const quizQuestions = [
 
 const scriptBeats = [
   {
-    time: "0:00",
-    title: "AI becomes normal",
+    chapter: "Step 01",
+    title: "AI coding is now the default environment",
     spectrum: "Why this matters",
     narration:
-      "Professional developers are already using AI coding tools, and a large share of new code is AI-generated.",
-    takeaway: "Students are entering a field where conversation with AI is becoming a core interface.",
+      "The transcript opens with a major shift: most professional developers regularly use AI coding tools, and a large share of new code is AI-generated. Students are not preparing for a future where AI might matter; they are entering a field where AI already shapes daily software work.",
+    takeaway:
+      "The student mindset changes from 'Will I use AI?' to 'How do I use AI responsibly and skillfully?'",
   },
   {
-    time: "2:03",
-    title: "The spectrum appears",
+    chapter: "Step 02",
+    title: "Typing syntax is no longer the main bottleneck",
+    spectrum: "Intent as interface",
+    narration:
+      "The transcript compares old programming to laying every brick by hand. With AI, the developer can describe the house, sketch the layout, and guide a fast construction crew. The conversation becomes part of the interface with the machine.",
+    takeaway:
+      "Students still need technical judgment, but their value moves from typing every line to deciding what should be built and how it should be checked.",
+  },
+  {
+    chapter: "Step 03",
+    title: "The spectrum begins with vibe coding",
     spectrum: "Vibe coding",
     narration:
-      "On the casual end, a developer describes what they want, accepts the code, then pastes errors back and asks the AI to fix it.",
-    takeaway: "This is fast for exploration, but the only verification is whether it seems to work.",
+      "Vibe coding is the casual workflow: describe what you want, accept what the AI gives you, paste errors back, and say 'fix this.' It is fast, playful, and useful for discovery, but it depends on trial and error.",
+    takeaway:
+      "Vibe coding is not bad for exploration. It becomes risky when students mistake a quick demo for reliable software.",
   },
   {
-    time: "3:00",
-    title: "Verification changes everything",
+    chapter: "Step 04",
+    title: "Agentic engineering is the disciplined end",
     spectrum: "Agentic engineering",
     narration:
-      "The disciplined end uses specs, tests, CI gates, security checks, and evaluations for the AI's reasoning path.",
-    takeaway: "Without systematic verification, the workflow is still vibe coding no matter how fancy the prompt sounds.",
+      "At the other end of the spectrum, the AI still writes code, but it works inside formal specifications, automated tests, CI gates, security checks, and evaluation routines. The process is designed to produce evidence, not just output.",
+    takeaway:
+      "The difference is not whether AI is used. The difference is whether AI output is systematically verified.",
   },
   {
-    time: "5:01",
-    title: "Prompting becomes context engineering",
-    spectrum: "Context",
+    chapter: "Step 05",
+    title: "Verification is the turning point",
+    spectrum: "From vibes to proof",
     narration:
-      "The new skill is giving the agent the right mix of instructions, knowledge, memory, examples, tools, and guardrails.",
-    takeaway: "Students learn to feed the AI a structured diet instead of relying on magic wording.",
+      "The transcript makes this point directly: without systematic verification, you are still vibe coding no matter how impressive the initial prompt is. Agentic engineering checks deterministic code with tests and AI reasoning with evaluations.",
+    takeaway:
+      "Students should ask, 'What would prove this works?' before asking, 'Can the AI build this faster?'",
   },
   {
-    time: "7:31",
+    chapter: "Step 06",
+    title: "Remember the BBQ and Michelin kitchen",
+    spectrum: "Quality analogy",
+    narration:
+      "Vibe coding is like a backyard BBQ: casual, forgiving, and okay for low-risk experiments. Agentic engineering is like a Michelin kitchen: measured ingredients, strict protocols, and quality checks before anything reaches a customer.",
+    takeaway:
+      "The level of verification should match the level of risk and responsibility.",
+  },
+  {
+    chapter: "Step 07",
+    title: "Prompt engineering gives way to context engineering",
+    spectrum: "Context engineering",
+    narration:
+      "The transcript argues that clever wording is no longer the core skill. The modern skill is context engineering: giving the AI structured information about the task, codebase, architecture, and constraints.",
+    takeaway:
+      "Students learn to prepare the agent's environment, not just write a clever prompt.",
+  },
+  {
+    chapter: "Step 08",
+    title: "Balance the six context ingredients",
+    spectrum: "Six-part context",
+    narration:
+      "The agent needs instructions, knowledge, memory, examples, tools, and guardrails. Instructions define boundaries. Knowledge supplies docs. Memory prevents repeated loops. Examples show house style. Tools enable action. Guardrails block unsafe moves.",
+    takeaway:
+      "Good AI work is structured. Each ingredient gives the model a different kind of support.",
+  },
+  {
+    chapter: "Step 09",
     title: "Avoid context rot",
-    spectrum: "Dynamic context",
+    spectrum: "Signal vs noise",
     narration:
-      "Pasting everything into the prompt can dilute the signal. Mature agents load detailed context only when it is needed.",
-    takeaway: "Good engineers decide what stays always-on and what should be pulled in on demand.",
+      "More context is not always better. If a student dumps an entire repository into the prompt, the model may lose focus, follow irrelevant files, or forget the main instruction. The transcript calls this context rot.",
+    takeaway:
+      "Students should provide the right context, not the most context.",
   },
   {
-    time: "11:17",
-    title: "Think in factories",
+    chapter: "Step 10",
+    title: "Use dynamic context like a hiking map",
+    spectrum: "Agent skills",
+    narration:
+      "Static context is like survival gear you always carry. Dynamic context is like a specific trail map you pull out only when needed. Agent skills load relevant schemas, tools, and docs on demand, then put that context away.",
+    takeaway:
+      "Students learn to keep core rules visible while loading specialized details only for the current task.",
+  },
+  {
+    chapter: "Step 11",
+    title: "The software life cycle shifts",
+    spectrum: "Modern SDLC",
+    narration:
+      "When implementation gets faster, the bottlenecks move. Requirements become a live conversation with prototypes. Testing becomes more than checking whether code compiles. Architecture and verification become the high-value human work.",
+    takeaway:
+      "Students should see AI as changing the entire workflow, not just speeding up coding.",
+  },
+  {
+    chapter: "Step 12",
+    title: "Evaluate the trajectory, not only the result",
+    spectrum: "Trajectory evaluation",
+    narration:
+      "The transcript warns that a piece of code can appear to work while taking an unsafe path. Trajectory evaluation asks: Did the agent use approved tools? Did it check permissions? Did it bypass a security step?",
+    takeaway:
+      "Students should grade the agent's work process, not just the final answer.",
+  },
+  {
+    chapter: "Step 13",
+    title: "AI can help with legacy systems",
+    spectrum: "Maintenance",
+    narration:
+      "The transcript explains that AI agents can map and refactor old systems that teams were previously afraid to touch. This makes maintenance and modernization part of the agentic engineering story.",
+    takeaway:
+      "Students should understand that AI is useful beyond greenfield projects; it can help reason through existing code.",
+  },
+  {
+    chapter: "Step 14",
+    title: "Think in factories, not isolated code",
+    spectrum: "Factory model",
+    narration:
+      "The developer's primary output becomes the factory that produces code. Instead of hand-tightening every bolt, the developer designs robotic arms, routes materials, and places quality sensors.",
+    takeaway:
+      "The new craft is building the system that repeatedly produces reliable software.",
+  },
+  {
+    chapter: "Step 15",
+    title: "An agent is the model plus the harness",
     spectrum: "Harness design",
     narration:
-      "The developer's output becomes the system that produces code: sandboxes, orchestration, observability, and quality sensors.",
-    takeaway: "The human moves from laying every brick to designing the factory that checks every brick.",
+      "The transcript emphasizes that the model alone is not the whole agent. The harness supplies sandboxes, orchestration, observability, logs, execution traces, cost metering, and controls that prevent drift.",
+    takeaway:
+      "When an agent fails, students should inspect the harness and context before simply blaming the model.",
   },
   {
-    time: "14:18",
-    title: "Choose the operating mode",
-    spectrum: "Conductor / Orchestrator",
+    chapter: "Step 16",
+    title: "Choose conductor or orchestrator mode",
+    spectrum: "Operating modes",
     narration:
-      "Developers move between hands-on conductor mode and async orchestrator mode, depending on the kind of work.",
-    takeaway: "The AI handles the routine 80%; humans focus on the strategic 20%.",
+      "In conductor mode, the developer guides the AI in real time inside the editor. In orchestrator mode, the developer delegates a larger goal to an agent working asynchronously in a sandbox and reviews the result.",
+    takeaway:
+      "Students learn to choose the right collaboration style for the task.",
   },
   {
-    time: "16:45",
-    title: "Understand the token economy",
+    chapter: "Step 17",
+    title: "Understand the 80% problem",
+    spectrum: "Human judgment",
+    narration:
+      "AI can often generate the routine 80% of a feature quickly. The hard 20% remains edge cases, business logic, architecture, and system integration. Human expertise concentrates where judgment matters most.",
+    takeaway:
+      "Students should not blindly accept output; they should spend saved time on review, strategy, and verification.",
+  },
+  {
+    chapter: "Step 18",
+    title: "Manage the token economy",
     spectrum: "Cost discipline",
     narration:
-      "Vibe coding has low upfront cost but high operational cost. Agentic engineering invests up front to reduce long-term waste.",
-    takeaway: "Reliable context and verification reduce retries, token burn, and maintenance debt.",
+      "Vibe coding has low upfront cost but high operational cost: retries, huge prompts, hallucinations, and maintenance debt. Agentic engineering has higher upfront setup but lower long-term cost because the factory gets more work right earlier.",
+    takeaway:
+      "Students learn that better engineering lowers both technical debt and AI usage waste.",
+  },
+  {
+    chapter: "Step 19",
+    title: "Route models intelligently",
+    spectrum: "Model routing",
+    narration:
+      "The transcript describes routing complex reasoning to stronger models and simple tasks to cheaper, faster models. The harness becomes a traffic cop that protects quality while reducing cost.",
+    takeaway:
+      "Not every task needs the most expensive model. Mature systems match model power to task difficulty.",
+  },
+  {
+    chapter: "Step 20",
+    title: "The mentorship gap becomes the big question",
+    spectrum: "Junior developer growth",
+    narration:
+      "The transcript ends with a challenge: if AI lays many of the bricks, how do junior developers learn architectural judgment? The answer starts with guided practice, examples, verification habits, and reflection.",
+    takeaway:
+      "This app exists to help students practice the judgment that future engineers will need most.",
   },
 ];
 
 const stageWorkshops = [
   {
     stage: "Vibe Coding",
-    badge: "Stage 1",
+    badge: "Example 1",
     learn:
       "Vibe coding is useful when the goal is speed, exploration, or a disposable prototype. The danger is pretending a prototype is production-ready.",
     scenario: "You want a quick campus event planner demo before tomorrow's club fair.",
@@ -238,8 +354,62 @@ const stageWorkshops = [
     answer: 1,
   },
   {
+    stage: "Vibe Coding",
+    badge: "Example 2",
+    learn:
+      "A vibe loop often feels productive because the screen changes quickly. Students need to notice when they are only reacting to visible errors.",
+    scenario: "A classmate asks for a flashcard app that generates cards from lecture notes.",
+    aiMove: "Make the app look good and generate flashcards. Here is the error I got. Fix it.",
+    example:
+      "The app works for one short paragraph, but no one checks long notes, duplicate cards, missing answers, or whether private notes are stored safely.",
+    challenge: "Which move keeps this in a safe learning zone?",
+    choices: [
+      {
+        text: "Call it an experiment and list the unknowns before adding real lecture notes.",
+        feedback:
+          "Correct. The student can keep exploring while clearly naming the missing checks and privacy questions.",
+      },
+      {
+        text: "Ask the AI to add every possible feature next.",
+        feedback: "More features increase complexity before the student understands whether the core behavior is safe.",
+      },
+      {
+        text: "Ignore edge cases because the first paragraph worked.",
+        feedback: "That is the classic eye test. It does not verify realistic student use.",
+      },
+    ],
+    answer: 0,
+  },
+  {
+    stage: "Vibe Coding",
+    badge: "Example 3",
+    learn:
+      "Vibe coding can burn tokens quickly because every failure becomes another vague retry. Better prompts help, but verification is the real upgrade.",
+    scenario: "You ask AI to create a grade calculator with weighted assignments.",
+    aiMove: "This total is wrong. Fix it. Now the dropdown broke. Fix that too.",
+    example:
+      "After several retries, the UI looks better but the math is still wrong when weights do not add to 100%.",
+    challenge: "What should the student do next?",
+    choices: [
+      {
+        text: "Keep retrying until the displayed number looks reasonable.",
+        feedback: "That keeps the student in trial-and-error mode.",
+      },
+      {
+        text: "Write three sample grading cases with expected totals.",
+        feedback:
+          "Correct. Even a small set of expected examples starts moving the work toward guided verification.",
+      },
+      {
+        text: "Switch colors so the calculator feels more finished.",
+        feedback: "Visual polish does not address the reliability problem.",
+      },
+    ],
+    answer: 1,
+  },
+  {
     stage: "Guided AI Development",
-    badge: "Stage 2",
+    badge: "Example 4",
     learn:
       "Guided AI development adds human direction: clearer acceptance criteria, examples from the repo, and focused tests around the riskiest behavior.",
     scenario: "Your planner now needs conflict detection when two study sessions overlap.",
@@ -266,8 +436,64 @@ const stageWorkshops = [
     answer: 1,
   },
   {
+    stage: "Guided AI Development",
+    badge: "Example 5",
+    learn:
+      "Context engineering starts when the student gives the model relevant rules, examples, and constraints instead of a blank request.",
+    scenario: "A team project needs a discussion-board moderation helper.",
+    aiMove:
+      "Follow our existing comment-card style. Flag harassment, threats, and spam. Do not auto-delete posts. Return a confidence score and reason.",
+    example:
+      "The student provides three sample posts, a UI component example, and a rule that human review is required before action.",
+    challenge: "Which context ingredient is most obvious here?",
+    choices: [
+      {
+        text: "Guardrails, because the AI is blocked from auto-deleting posts.",
+        feedback:
+          "Correct. The student is defining a safety boundary around what the AI may do.",
+      },
+      {
+        text: "Context rot, because the prompt contains more than one sentence.",
+        feedback: "Context rot is about irrelevant overload, not useful task constraints.",
+      },
+      {
+        text: "Model routing, because the UI uses cards.",
+        feedback: "Model routing is about choosing different models for different task types.",
+      },
+    ],
+    answer: 0,
+  },
+  {
+    stage: "Guided AI Development",
+    badge: "Example 6",
+    learn:
+      "Guided work teaches students to ask for evidence and compare output against known project patterns.",
+    scenario: "You need an accessibility improvement for a course-registration form.",
+    aiMove:
+      "Update labels, keyboard focus, and error messages. Match the current form components. Include a checklist of accessibility checks.",
+    example:
+      "The AI changes the form and returns a checklist. The student tests keyboard navigation and screen-reader labels before accepting.",
+    challenge: "What makes this guided rather than pure vibe coding?",
+    choices: [
+      {
+        text: "The student asked for a trendy design.",
+        feedback: "A trendy design does not verify accessibility.",
+      },
+      {
+        text: "The student supplied constraints and manually checked the important interaction paths.",
+        feedback:
+          "Correct. Human direction and targeted checks are the bridge between casual prompting and full agentic engineering.",
+      },
+      {
+        text: "The AI wrote all of the code without interruption.",
+        feedback: "Hands-off generation alone does not make the work reliable.",
+      },
+    ],
+    answer: 1,
+  },
+  {
     stage: "Agentic Engineering",
-    badge: "Stage 3",
+    badge: "Example 7",
     learn:
       "Agentic engineering treats AI as part of a controlled production system. The harness defines context, tools, sandboxes, guardrails, and quality gates.",
     scenario: "The planner is becoming a course project used by hundreds of students.",
@@ -293,6 +519,62 @@ const stageWorkshops = [
     ],
     answer: 1,
   },
+  {
+    stage: "Agentic Engineering",
+    badge: "Example 8",
+    learn:
+      "Trajectory evaluation checks whether the agent followed the right path, not just whether the app appears to work.",
+    scenario: "An agent updates a campus payment form for club dues.",
+    aiMove:
+      "Use the approved payment SDK only. Do not log card data. Run security tests and show the changed files before requesting review.",
+    example:
+      "The UI works, but the trace shows whether the agent touched forbidden files, added unsafe logging, or skipped the payment SDK.",
+    challenge: "Which evidence matters most?",
+    choices: [
+      {
+        text: "A screenshot of the successful payment button.",
+        feedback: "A screenshot is useful, but it does not prove the agent avoided unsafe steps.",
+      },
+      {
+        text: "Logs showing approved tools, no sensitive logging, and passing security checks.",
+        feedback:
+          "Correct. This evaluates the agent's trajectory and the final result.",
+      },
+      {
+        text: "The agent saying it followed the rules.",
+        feedback: "Claims are weaker than observable evidence from tools, logs, and tests.",
+      },
+    ],
+    answer: 1,
+  },
+  {
+    stage: "Agentic Engineering",
+    badge: "Example 9",
+    learn:
+      "The factory model reduces long-term cost by routing work, loading context on demand, and matching model power to task difficulty.",
+    scenario: "A capstone team wants agents to generate weekly test coverage reports.",
+    aiMove:
+      "Use a small model to summarize passing tests, a stronger model to analyze flaky failures, and CI gates to block unsafe changes.",
+    example:
+      "The harness routes simple summaries cheaply, sends hard debugging to a stronger model, and stores the evidence in the pull request.",
+    challenge: "Which transcript concept does this demonstrate?",
+    choices: [
+      {
+        text: "Intelligent model routing inside a mature harness.",
+        feedback:
+          "Correct. The system controls cost and quality by routing tasks instead of using the largest model for everything.",
+      },
+      {
+        text: "Pure vibe coding because AI is involved.",
+        feedback: "AI involvement alone does not define vibe coding. Verification and harness design define the mature workflow.",
+      },
+      {
+        text: "Context rot because multiple models are used.",
+        feedback: "Context rot is about overloaded irrelevant context, not model selection.",
+      },
+    ],
+    answer: 0,
+  },
 ];
 
 function iconMarkup(type) {
@@ -312,7 +594,7 @@ function lessonCards() {
         <article class="lesson-card" style="--delay: ${index * 90}ms">
           <div class="lesson-card__meta">
             <span>${lesson.eyebrow}</span>
-            <strong>${lesson.time}</strong>
+            <strong>${lesson.tag}</strong>
           </div>
           <h3>${lesson.title}</h3>
           <p>${lesson.summary}</p>
@@ -382,7 +664,7 @@ function scriptBeatButtons() {
     .map(
       (beat, index) => `
         <button class="beat-button" type="button" data-beat="${index}">
-          <span>${beat.time}</span>
+          <span>${beat.chapter}</span>
           <strong>${beat.title}</strong>
           <small>${beat.spectrum}</small>
         </button>
@@ -464,9 +746,9 @@ app.innerHTML = `
         <p class="eyebrow">Script navigator</p>
         <h2>Move through the transcript as a learning path.</h2>
         <p>
-          Students can follow the story beat by beat: why AI coding matters, how
-          vibe coding works, why verification changes the game, and how the factory
-          mindset emerges.
+          Students can follow the full story step by step: why AI coding matters,
+          how vibe coding works, why verification changes the game, how context and
+          harness design mature the workflow, and why junior engineers still need judgment.
         </p>
       </div>
       <div class="journey-layout">
@@ -475,7 +757,7 @@ app.innerHTML = `
         </div>
         <article class="beat-detail" aria-live="polite">
           <div class="beat-detail__topline">
-            <span id="beatTime"></span>
+            <span id="beatChapter"></span>
             <strong id="beatSpectrum"></strong>
           </div>
           <h3 id="beatTitle"></h3>
@@ -560,7 +842,7 @@ app.innerHTML = `
       </div>
       <div class="workshop-shell">
         <div class="workshop-progress">
-          <span id="workshopProgress">0 of 3 examples completed</span>
+          <span id="workshopProgress">0 of ${stageWorkshops.length} examples completed</span>
           <div class="progress-track"><span id="workshopProgressBar"></span></div>
         </div>
         <div class="workshop-tabs" role="tablist" aria-label="Example workshop stages">
@@ -731,7 +1013,7 @@ const stageRisk = document.querySelector("#stageRisk");
 const stageHabit = document.querySelector("#stageHabit");
 
 const beatButtons = [...document.querySelectorAll(".beat-button")];
-const beatTime = document.querySelector("#beatTime");
+const beatChapter = document.querySelector("#beatChapter");
 const beatSpectrum = document.querySelector("#beatSpectrum");
 const beatTitle = document.querySelector("#beatTitle");
 const beatNarration = document.querySelector("#beatNarration");
@@ -773,7 +1055,7 @@ function setBeat(index) {
   activeBeatIndex = Math.max(0, Math.min(scriptBeats.length - 1, index));
   const beat = scriptBeats[activeBeatIndex];
 
-  beatTime.textContent = beat.time;
+  beatChapter.textContent = beat.chapter;
   beatSpectrum.textContent = beat.spectrum;
   beatTitle.textContent = beat.title;
   beatNarration.textContent = beat.narration;

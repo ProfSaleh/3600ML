@@ -142,6 +142,159 @@ const quizQuestions = [
   },
 ];
 
+const scriptBeats = [
+  {
+    time: "0:00",
+    title: "AI becomes normal",
+    spectrum: "Why this matters",
+    narration:
+      "Professional developers are already using AI coding tools, and a large share of new code is AI-generated.",
+    takeaway: "Students are entering a field where conversation with AI is becoming a core interface.",
+  },
+  {
+    time: "2:03",
+    title: "The spectrum appears",
+    spectrum: "Vibe coding",
+    narration:
+      "On the casual end, a developer describes what they want, accepts the code, then pastes errors back and asks the AI to fix it.",
+    takeaway: "This is fast for exploration, but the only verification is whether it seems to work.",
+  },
+  {
+    time: "3:00",
+    title: "Verification changes everything",
+    spectrum: "Agentic engineering",
+    narration:
+      "The disciplined end uses specs, tests, CI gates, security checks, and evaluations for the AI's reasoning path.",
+    takeaway: "Without systematic verification, the workflow is still vibe coding no matter how fancy the prompt sounds.",
+  },
+  {
+    time: "5:01",
+    title: "Prompting becomes context engineering",
+    spectrum: "Context",
+    narration:
+      "The new skill is giving the agent the right mix of instructions, knowledge, memory, examples, tools, and guardrails.",
+    takeaway: "Students learn to feed the AI a structured diet instead of relying on magic wording.",
+  },
+  {
+    time: "7:31",
+    title: "Avoid context rot",
+    spectrum: "Dynamic context",
+    narration:
+      "Pasting everything into the prompt can dilute the signal. Mature agents load detailed context only when it is needed.",
+    takeaway: "Good engineers decide what stays always-on and what should be pulled in on demand.",
+  },
+  {
+    time: "11:17",
+    title: "Think in factories",
+    spectrum: "Harness design",
+    narration:
+      "The developer's output becomes the system that produces code: sandboxes, orchestration, observability, and quality sensors.",
+    takeaway: "The human moves from laying every brick to designing the factory that checks every brick.",
+  },
+  {
+    time: "14:18",
+    title: "Choose the operating mode",
+    spectrum: "Conductor / Orchestrator",
+    narration:
+      "Developers move between hands-on conductor mode and async orchestrator mode, depending on the kind of work.",
+    takeaway: "The AI handles the routine 80%; humans focus on the strategic 20%.",
+  },
+  {
+    time: "16:45",
+    title: "Understand the token economy",
+    spectrum: "Cost discipline",
+    narration:
+      "Vibe coding has low upfront cost but high operational cost. Agentic engineering invests up front to reduce long-term waste.",
+    takeaway: "Reliable context and verification reduce retries, token burn, and maintenance debt.",
+  },
+];
+
+const stageWorkshops = [
+  {
+    stage: "Vibe Coding",
+    badge: "Stage 1",
+    learn:
+      "Vibe coding is useful when the goal is speed, exploration, or a disposable prototype. The danger is pretending a prototype is production-ready.",
+    scenario: "You want a quick campus event planner demo before tomorrow's club fair.",
+    aiMove: "Build a simple event planner with cards, filters, and a save button. If it breaks, fix it.",
+    example:
+      "A student asks the AI for the whole interface, clicks through the demo, and pastes any visible error back into the chat.",
+    challenge: "What is the best next move before showing this to real users?",
+    choices: [
+      {
+        text: "Ship it because the buttons worked once.",
+        feedback: "That is still pure vibe coding. One manual click path does not prove reliability.",
+      },
+      {
+        text: "Label it a prototype and write down what still needs verification.",
+        feedback:
+          "Correct. Vibe coding can be valuable as long as students recognize it as exploration, not finished engineering.",
+      },
+      {
+        text: "Paste the whole repository into the next prompt.",
+        feedback: "That risks context rot and does not add a real verification plan.",
+      },
+    ],
+    answer: 1,
+  },
+  {
+    stage: "Guided AI Development",
+    badge: "Stage 2",
+    learn:
+      "Guided AI development adds human direction: clearer acceptance criteria, examples from the repo, and focused tests around the riskiest behavior.",
+    scenario: "Your planner now needs conflict detection when two study sessions overlap.",
+    aiMove:
+      "Use the existing event-card pattern. Add overlap detection for same-day sessions. Include tests for boundary times.",
+    example:
+      "A student supplies expected inputs and outputs, asks for unit tests, and reviews the generated logic before accepting it.",
+    challenge: "Which verification habit moves this beyond vibes?",
+    choices: [
+      {
+        text: "Ask the model to explain why it is probably correct.",
+        feedback: "Explanations help, but they are not enough without executable checks.",
+      },
+      {
+        text: "Add tests for overlapping, adjacent, and different-day sessions.",
+        feedback:
+          "Correct. Focused tests turn a generated feature into something students can verify repeatably.",
+      },
+      {
+        text: "Use a bigger model for every retry.",
+        feedback: "Model size does not replace acceptance criteria or tests.",
+      },
+    ],
+    answer: 1,
+  },
+  {
+    stage: "Agentic Engineering",
+    badge: "Stage 3",
+    learn:
+      "Agentic engineering treats AI as part of a controlled production system. The harness defines context, tools, sandboxes, guardrails, and quality gates.",
+    scenario: "The planner is becoming a course project used by hundreds of students.",
+    aiMove:
+      "Implement inside a sandbox. Follow the project spec. Run tests, accessibility checks, and security checks before opening a PR.",
+    example:
+      "A student delegates work to an agent with tool limits, observes logs, checks the trajectory, and only accepts code that passes gates.",
+    challenge: "What is the strongest sign this is agentic engineering?",
+    choices: [
+      {
+        text: "The prompt is longer and more detailed.",
+        feedback: "A detailed prompt helps, but agentic engineering depends on verification and harness design.",
+      },
+      {
+        text: "The agent used approved tools, passed CI, and produced reviewable evidence.",
+        feedback:
+          "Correct. The system verifies both the final output and the path the agent took to produce it.",
+      },
+      {
+        text: "The feature was generated faster than a human could type it.",
+        feedback: "Speed is expected. Reliability comes from the harness and quality gates.",
+      },
+    ],
+    answer: 1,
+  },
+];
+
 function iconMarkup(type) {
   const icons = {
     spark: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2zm6 12l.9 2.6L22 18l-3.1 1.4L18 22l-.9-2.6L14 18l3.1-1.4L18 14z"/></svg>`,
@@ -224,6 +377,45 @@ function quizMarkup() {
     .join("");
 }
 
+function scriptBeatButtons() {
+  return scriptBeats
+    .map(
+      (beat, index) => `
+        <button class="beat-button" type="button" data-beat="${index}">
+          <span>${beat.time}</span>
+          <strong>${beat.title}</strong>
+          <small>${beat.spectrum}</small>
+        </button>
+      `
+    )
+    .join("");
+}
+
+function workshopTabs() {
+  return stageWorkshops
+    .map(
+      (workshop, index) => `
+        <button class="workshop-tab" type="button" data-workshop="${index}">
+          <span>${workshop.badge}</span>
+          <strong>${workshop.stage}</strong>
+        </button>
+      `
+    )
+    .join("");
+}
+
+function workshopChoices(workshop) {
+  return workshop.choices
+    .map(
+      (choice, index) => `
+        <button class="choice-button" type="button" data-choice="${index}">
+          ${choice.text}
+        </button>
+      `
+    )
+    .join("");
+}
+
 app.innerHTML = `
   <header class="site-header">
     <a class="brand" href="#top" aria-label="AgenticU home">
@@ -231,7 +423,9 @@ app.innerHTML = `
       <span>AgenticU</span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
+      <a href="#journey">Script</a>
       <a href="#spectrum">Spectrum</a>
+      <a href="#workshop">Examples</a>
       <a href="#curriculum">Lessons</a>
       <a href="#context">Context</a>
       <a href="#quiz">Quiz</a>
@@ -249,8 +443,8 @@ app.innerHTML = `
           and verification.
         </p>
         <div class="hero__actions">
-          <a class="button button--primary" href="#spectrum">Start the journey</a>
-          <a class="button button--secondary" href="#quiz">Try the quick check</a>
+          <a class="button button--primary" href="#journey">Start guided journey</a>
+          <a class="button button--secondary" href="#workshop">Practice with examples</a>
         </div>
       </div>
       <aside class="hero-card" aria-label="Key benchmark statistics">
@@ -263,6 +457,39 @@ app.innerHTML = `
           <small>developers regularly use AI coding tools</small>
         </div>
       </aside>
+    </section>
+
+    <section class="section-shell journey" id="journey">
+      <div class="section-heading">
+        <p class="eyebrow">Script navigator</p>
+        <h2>Move through the transcript as a learning path.</h2>
+        <p>
+          Students can follow the story beat by beat: why AI coding matters, how
+          vibe coding works, why verification changes the game, and how the factory
+          mindset emerges.
+        </p>
+      </div>
+      <div class="journey-layout">
+        <div class="beat-list" aria-label="Transcript learning beats">
+          ${scriptBeatButtons()}
+        </div>
+        <article class="beat-detail" aria-live="polite">
+          <div class="beat-detail__topline">
+            <span id="beatTime"></span>
+            <strong id="beatSpectrum"></strong>
+          </div>
+          <h3 id="beatTitle"></h3>
+          <p id="beatNarration"></p>
+          <div class="takeaway-card">
+            <span>Student takeaway</span>
+            <p id="beatTakeaway"></p>
+          </div>
+          <div class="journey-controls">
+            <button class="button button--secondary" type="button" id="previousBeat">Previous beat</button>
+            <button class="button button--primary" type="button" id="nextBeat">Next beat</button>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section class="section-shell" id="spectrum">
@@ -318,6 +545,56 @@ app.innerHTML = `
               <dd id="stageHabit"></dd>
             </div>
           </dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-shell workshop" id="workshop">
+      <div class="section-heading">
+        <p class="eyebrow">Example workshop</p>
+        <h2>Learn each stage, then make the engineering move.</h2>
+        <p>
+          Each stage uses a student project example. Read the stage, inspect the AI
+          move, then choose the best next action. No instructor-provided material is required.
+        </p>
+      </div>
+      <div class="workshop-shell">
+        <div class="workshop-progress">
+          <span id="workshopProgress">0 of 3 examples completed</span>
+          <div class="progress-track"><span id="workshopProgressBar"></span></div>
+        </div>
+        <div class="workshop-tabs" role="tablist" aria-label="Example workshop stages">
+          ${workshopTabs()}
+        </div>
+        <article class="workshop-panel" aria-live="polite">
+          <div class="workshop-panel__header">
+            <p class="eyebrow" id="workshopBadge"></p>
+            <h3 id="workshopStage"></h3>
+            <p id="workshopLearn"></p>
+          </div>
+          <div class="example-flow">
+            <div>
+              <span>Scenario</span>
+              <p id="workshopScenario"></p>
+            </div>
+            <div>
+              <span>AI move</span>
+              <p id="workshopAiMove"></p>
+            </div>
+            <div>
+              <span>What the student sees</span>
+              <p id="workshopExample"></p>
+            </div>
+          </div>
+          <div class="challenge-card">
+            <h4 id="workshopChallenge"></h4>
+            <div class="choice-grid" id="workshopChoices"></div>
+            <p class="choice-feedback" id="workshopFeedback"></p>
+          </div>
+          <div class="journey-controls">
+            <button class="button button--secondary" type="button" id="previousWorkshop">Previous stage</button>
+            <button class="button button--primary" type="button" id="nextWorkshop">Next stage</button>
+          </div>
         </article>
       </div>
     </section>
@@ -453,6 +730,30 @@ const stageVerification = document.querySelector("#stageVerification");
 const stageRisk = document.querySelector("#stageRisk");
 const stageHabit = document.querySelector("#stageHabit");
 
+const beatButtons = [...document.querySelectorAll(".beat-button")];
+const beatTime = document.querySelector("#beatTime");
+const beatSpectrum = document.querySelector("#beatSpectrum");
+const beatTitle = document.querySelector("#beatTitle");
+const beatNarration = document.querySelector("#beatNarration");
+const beatTakeaway = document.querySelector("#beatTakeaway");
+const previousBeat = document.querySelector("#previousBeat");
+const nextBeat = document.querySelector("#nextBeat");
+
+const workshopTabsList = [...document.querySelectorAll(".workshop-tab")];
+const workshopProgress = document.querySelector("#workshopProgress");
+const workshopProgressBar = document.querySelector("#workshopProgressBar");
+const workshopBadge = document.querySelector("#workshopBadge");
+const workshopStage = document.querySelector("#workshopStage");
+const workshopLearn = document.querySelector("#workshopLearn");
+const workshopScenario = document.querySelector("#workshopScenario");
+const workshopAiMove = document.querySelector("#workshopAiMove");
+const workshopExample = document.querySelector("#workshopExample");
+const workshopChallenge = document.querySelector("#workshopChallenge");
+const workshopChoicesContainer = document.querySelector("#workshopChoices");
+const workshopFeedback = document.querySelector("#workshopFeedback");
+const previousWorkshop = document.querySelector("#previousWorkshop");
+const nextWorkshop = document.querySelector("#nextWorkshop");
+
 const contextButtons = [...document.querySelectorAll(".context-card")];
 const contextNumber = document.querySelector("#contextNumber");
 const contextTitle = document.querySelector("#contextTitle");
@@ -463,6 +764,92 @@ const briefTextareas = [...document.querySelectorAll("[data-brief]")];
 const briefScore = document.querySelector("#briefScore");
 const quizForm = document.querySelector(".quiz-form");
 const quizResult = document.querySelector("#quizResult");
+
+let activeBeatIndex = 0;
+let activeWorkshopIndex = 0;
+const completedWorkshops = new Set();
+
+function setBeat(index) {
+  activeBeatIndex = Math.max(0, Math.min(scriptBeats.length - 1, index));
+  const beat = scriptBeats[activeBeatIndex];
+
+  beatTime.textContent = beat.time;
+  beatSpectrum.textContent = beat.spectrum;
+  beatTitle.textContent = beat.title;
+  beatNarration.textContent = beat.narration;
+  beatTakeaway.textContent = beat.takeaway;
+
+  beatButtons.forEach((button, buttonIndex) => {
+    button.classList.toggle("is-active", buttonIndex === activeBeatIndex);
+  });
+
+  previousBeat.disabled = activeBeatIndex === 0;
+  nextBeat.disabled = activeBeatIndex === scriptBeats.length - 1;
+}
+
+function updateWorkshopProgress() {
+  const completed = completedWorkshops.size;
+  const total = stageWorkshops.length;
+  workshopProgress.textContent = `${completed} of ${total} examples completed`;
+  workshopProgressBar.style.width = `${Math.round((completed / total) * 100)}%`;
+
+  workshopTabsList.forEach((button, index) => {
+    button.classList.toggle("is-complete", completedWorkshops.has(index));
+  });
+}
+
+function setWorkshop(index) {
+  activeWorkshopIndex = Math.max(0, Math.min(stageWorkshops.length - 1, index));
+  const workshop = stageWorkshops[activeWorkshopIndex];
+
+  workshopBadge.textContent = workshop.badge;
+  workshopStage.textContent = workshop.stage;
+  workshopLearn.textContent = workshop.learn;
+  workshopScenario.textContent = workshop.scenario;
+  workshopAiMove.textContent = workshop.aiMove;
+  workshopExample.textContent = workshop.example;
+  workshopChallenge.textContent = workshop.challenge;
+  workshopChoicesContainer.innerHTML = workshopChoices(workshop);
+  workshopFeedback.textContent = completedWorkshops.has(activeWorkshopIndex)
+    ? "Completed. You can still choose another answer to review the feedback."
+    : "Choose the best next move.";
+  workshopFeedback.className = "choice-feedback";
+
+  workshopTabsList.forEach((button, buttonIndex) => {
+    const isSelected = buttonIndex === activeWorkshopIndex;
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-selected", String(isSelected));
+  });
+
+  previousWorkshop.disabled = activeWorkshopIndex === 0;
+  nextWorkshop.disabled = activeWorkshopIndex === stageWorkshops.length - 1;
+
+  [...workshopChoicesContainer.querySelectorAll(".choice-button")].forEach((button) => {
+    button.addEventListener("click", () => {
+      chooseWorkshopOption(Number(button.dataset.choice));
+    });
+  });
+}
+
+function chooseWorkshopOption(choiceIndex) {
+  const workshop = stageWorkshops[activeWorkshopIndex];
+  const isCorrect = choiceIndex === workshop.answer;
+  const choice = workshop.choices[choiceIndex];
+
+  if (isCorrect) {
+    completedWorkshops.add(activeWorkshopIndex);
+  }
+
+  [...workshopChoicesContainer.querySelectorAll(".choice-button")].forEach((button, buttonIndex) => {
+    button.classList.toggle("is-correct", buttonIndex === choiceIndex && isCorrect);
+    button.classList.toggle("is-incorrect", buttonIndex === choiceIndex && !isCorrect);
+  });
+
+  workshopFeedback.textContent = choice.feedback;
+  workshopFeedback.classList.toggle("is-correct", isCorrect);
+  workshopFeedback.classList.toggle("is-incorrect", !isCorrect);
+  updateWorkshopProgress();
+}
 
 function setStage(index) {
   const stage = spectrumStages[index];
@@ -510,6 +897,34 @@ stageButtons.forEach((button) => {
   });
 });
 
+beatButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setBeat(Number(button.dataset.beat));
+  });
+});
+
+previousBeat.addEventListener("click", () => {
+  setBeat(activeBeatIndex - 1);
+});
+
+nextBeat.addEventListener("click", () => {
+  setBeat(activeBeatIndex + 1);
+});
+
+workshopTabsList.forEach((button) => {
+  button.addEventListener("click", () => {
+    setWorkshop(Number(button.dataset.workshop));
+  });
+});
+
+previousWorkshop.addEventListener("click", () => {
+  setWorkshop(activeWorkshopIndex - 1);
+});
+
+nextWorkshop.addEventListener("click", () => {
+  setWorkshop(activeWorkshopIndex + 1);
+});
+
 contextButtons.forEach((button) => {
   button.addEventListener("click", () => {
     setContext(Number(button.dataset.contextIndex));
@@ -553,6 +968,9 @@ quizForm.addEventListener("submit", (event) => {
   `;
 });
 
+setBeat(0);
 setStage(0);
+setWorkshop(0);
+updateWorkshopProgress();
 setContext(0);
 updateBriefScore();

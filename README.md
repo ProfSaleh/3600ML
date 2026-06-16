@@ -10,6 +10,16 @@ An interactive educational app for undergraduate students learning how AI-assist
 - What the factory model means for modern developers, including conductor and orchestrator modes.
 - How to rewrite vague prompts into engineering briefs with specifications, tests, and guardrails.
 
+## Student experience
+
+The app is self-guided. Instructors do not need to provide prompts, files, or examples.
+
+- **Script navigator** turns the source transcript into clickable learning beats.
+- **Spectrum explorer** lets students compare vibe coding, guided AI development, and agentic engineering.
+- **Example workshop** gives each stage a scenario, AI move, student-visible example, and feedback challenge.
+- **Practice studio** helps students rewrite a vague prompt into a specification, verification plan, and guardrails.
+- **Knowledge check** reinforces the main ideas with immediate explanations.
+
 ## Getting started
 
 ```bash

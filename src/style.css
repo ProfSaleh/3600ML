@@ -237,7 +237,9 @@ h3 {
 }
 
 .hero-card,
+.beat-detail,
 .spectrum-panel,
+.workshop-shell,
 .lesson-card,
 .context-detail,
 .factory-card,
@@ -323,6 +325,135 @@ h3 {
 .section-heading {
   max-width: 800px;
   margin-bottom: 2rem;
+}
+
+.journey-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+  gap: 1rem;
+}
+
+.beat-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.beat-button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.8rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.beat-button:hover,
+.beat-button:focus-visible,
+.beat-button.is-active {
+  border-color: rgba(114, 242, 161, 0.58);
+  background: rgba(114, 242, 161, 0.1);
+  transform: translateY(-2px);
+}
+
+.beat-button span {
+  grid-row: span 2;
+  color: var(--warning);
+  font-weight: 900;
+}
+
+.beat-button strong {
+  font-size: 0.98rem;
+}
+
+.beat-button small {
+  color: var(--muted);
+}
+
+.beat-detail {
+  display: grid;
+  align-content: start;
+  gap: 1.2rem;
+  min-height: 100%;
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at top right, rgba(21, 209, 255, 0.18), transparent 16rem),
+    var(--panel-strong);
+}
+
+.beat-detail__topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.beat-detail__topline span,
+.beat-detail__topline strong {
+  display: inline-flex;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.beat-detail__topline span {
+  color: var(--warning);
+  font-weight: 900;
+}
+
+.beat-detail__topline strong {
+  color: var(--brand-3);
+}
+
+.beat-detail h3 {
+  margin-bottom: 0;
+  font-size: clamp(1.9rem, 4vw, 3.3rem);
+}
+
+.beat-detail > p,
+.takeaway-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.takeaway-card {
+  padding: 1.2rem;
+  border: 1px solid rgba(114, 242, 161, 0.28);
+  border-radius: 22px;
+  background: rgba(114, 242, 161, 0.08);
+}
+
+.takeaway-card span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--brand-3);
+  font-weight: 900;
+}
+
+.takeaway-card p {
+  margin-bottom: 0;
+}
+
+.journey-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
 }
 
 .spectrum-panel {
@@ -451,6 +582,195 @@ h3 {
 
 .stage-detail dd {
   margin: 0;
+}
+
+.workshop-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+}
+
+.workshop-progress {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.workshop-progress span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.progress-track {
+  overflow: hidden;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-3));
+  transition: width 240ms ease;
+}
+
+.workshop-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.workshop-tab {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.workshop-tab:hover,
+.workshop-tab:focus-visible,
+.workshop-tab.is-active {
+  border-color: rgba(21, 209, 255, 0.55);
+  background: rgba(21, 209, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.workshop-tab.is-complete {
+  border-color: rgba(114, 242, 161, 0.58);
+}
+
+.workshop-tab span {
+  color: var(--warning);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.workshop-panel {
+  display: grid;
+  gap: 1.2rem;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.14), rgba(21, 209, 255, 0.08)),
+    rgba(255, 255, 255, 0.05);
+}
+
+.workshop-panel__header p,
+.example-flow p,
+.challenge-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.workshop-panel h3 {
+  margin-bottom: 0.6rem;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+}
+
+.example-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.example-flow div,
+.challenge-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(8, 17, 31, 0.46);
+}
+
+.example-flow span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--brand-3);
+  font-weight: 900;
+}
+
+.example-flow p {
+  margin-bottom: 0;
+}
+
+.challenge-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.challenge-card h4 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.choice-button {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.choice-button:hover,
+.choice-button:focus-visible {
+  border-color: rgba(21, 209, 255, 0.55);
+  background: rgba(21, 209, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.choice-button.is-correct {
+  border-color: rgba(114, 242, 161, 0.7);
+  background: rgba(114, 242, 161, 0.12);
+}
+
+.choice-button.is-incorrect {
+  border-color: rgba(255, 107, 138, 0.75);
+  background: rgba(255, 107, 138, 0.1);
+}
+
+.choice-feedback {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.choice-feedback.is-correct {
+  border-color: rgba(114, 242, 161, 0.55);
+  color: var(--brand-3);
+}
+
+.choice-feedback.is-incorrect {
+  border-color: rgba(255, 107, 138, 0.6);
+  color: #ffc4d0;
 }
 
 .lesson-grid {
@@ -862,6 +1182,7 @@ textarea:focus {
   }
 
   .hero,
+  .journey-layout,
   .spectrum-panel,
   .context-layout,
   .split-section,
@@ -875,6 +1196,11 @@ textarea:focus {
 
   .lesson-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .example-flow,
+  .workshop-tabs {
+    grid-template-columns: 1fr;
   }
 
   .context-detail {

@@ -1,7 +1,7 @@
 {
-  "name": "threejs-car-dodging-game",
+  "name": "agenticu-vibe-to-agentic",
   "version": "1.0.0",
-  "description": "2D-style car dodging game built with Three.js",
+  "description": "Interactive educational app for learning the shift from vibe coding to agentic engineering",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,16 +10,14 @@
     "preview": "vite preview"
   },
   "keywords": [
-    "threejs",
-    "game",
+    "education",
+    "ai-agents",
+    "agentic-engineering",
     "vite"
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "three": "^0.181.1"
-  },
   "devDependencies": {
-    "vite": "^7.2.1"
+    "vite": "^8.0.16"
   }
 }

@@ -130,7 +130,7 @@ const quizQuestions = [
       "Context rot happens when irrelevant information overwhelms the signal the model should focus on.",
   },
   {
-    question: "In the transcript's factory model, what does the developer design?",
+    question: "In the factory model, what does the developer design?",
     choices: [
       "Only the final syntax",
       "The harness, checks, tools, and flow that produce reliable code",
@@ -142,13 +142,13 @@ const quizQuestions = [
   },
 ];
 
-const scriptBeats = [
+const journeySteps = [
   {
     chapter: "Step 01",
     title: "AI coding is now the default environment",
     spectrum: "Why this matters",
     narration:
-      "The transcript opens with a major shift: most professional developers regularly use AI coding tools, and a large share of new code is AI-generated. Students are not preparing for a future where AI might matter; they are entering a field where AI already shapes daily software work.",
+      "The journey opens with a major shift: most professional developers regularly use AI coding tools, and a large share of new code is AI-generated. Students are not preparing for a future where AI might matter; they are entering a field where AI already shapes daily software work.",
     takeaway:
       "The student mindset changes from 'Will I use AI?' to 'How do I use AI responsibly and skillfully?'",
   },
@@ -157,7 +157,7 @@ const scriptBeats = [
     title: "Typing syntax is no longer the main bottleneck",
     spectrum: "Intent as interface",
     narration:
-      "The transcript compares old programming to laying every brick by hand. With AI, the developer can describe the house, sketch the layout, and guide a fast construction crew. The conversation becomes part of the interface with the machine.",
+      "The opening comparison frames old programming as laying every brick by hand. With AI, the developer can describe the house, sketch the layout, and guide a fast construction crew. The conversation becomes part of the interface with the machine.",
     takeaway:
       "Students still need technical judgment, but their value moves from typing every line to deciding what should be built and how it should be checked.",
   },
@@ -184,7 +184,7 @@ const scriptBeats = [
     title: "Verification is the turning point",
     spectrum: "From vibes to proof",
     narration:
-      "The transcript makes this point directly: without systematic verification, you are still vibe coding no matter how impressive the initial prompt is. Agentic engineering checks deterministic code with tests and AI reasoning with evaluations.",
+      "The turning point is direct: without systematic verification, you are still vibe coding no matter how impressive the initial prompt is. Agentic engineering checks deterministic code with tests and AI reasoning with evaluations.",
     takeaway:
       "Students should ask, 'What would prove this works?' before asking, 'Can the AI build this faster?'",
   },
@@ -202,7 +202,7 @@ const scriptBeats = [
     title: "Prompt engineering gives way to context engineering",
     spectrum: "Context engineering",
     narration:
-      "The transcript argues that clever wording is no longer the core skill. The modern skill is context engineering: giving the AI structured information about the task, codebase, architecture, and constraints.",
+      "Clever wording is no longer the core skill. The modern skill is context engineering: giving the AI structured information about the task, codebase, architecture, and constraints.",
     takeaway:
       "Students learn to prepare the agent's environment, not just write a clever prompt.",
   },
@@ -220,7 +220,7 @@ const scriptBeats = [
     title: "Avoid context rot",
     spectrum: "Signal vs noise",
     narration:
-      "More context is not always better. If a student dumps an entire repository into the prompt, the model may lose focus, follow irrelevant files, or forget the main instruction. The transcript calls this context rot.",
+      "More context is not always better. If a student dumps an entire repository into the prompt, the model may lose focus, follow irrelevant files, or forget the main instruction. This failure mode is called context rot.",
     takeaway:
       "Students should provide the right context, not the most context.",
   },
@@ -247,7 +247,7 @@ const scriptBeats = [
     title: "Evaluate the trajectory, not only the result",
     spectrum: "Trajectory evaluation",
     narration:
-      "The transcript warns that a piece of code can appear to work while taking an unsafe path. Trajectory evaluation asks: Did the agent use approved tools? Did it check permissions? Did it bypass a security step?",
+      "A piece of code can appear to work while taking an unsafe path. Trajectory evaluation asks: Did the agent use approved tools? Did it check permissions? Did it bypass a security step?",
     takeaway:
       "Students should grade the agent's work process, not just the final answer.",
   },
@@ -256,7 +256,7 @@ const scriptBeats = [
     title: "AI can help with legacy systems",
     spectrum: "Maintenance",
     narration:
-      "The transcript explains that AI agents can map and refactor old systems that teams were previously afraid to touch. This makes maintenance and modernization part of the agentic engineering story.",
+      "AI agents can map and refactor old systems that teams were previously afraid to touch. This makes maintenance and modernization part of the agentic engineering story.",
     takeaway:
       "Students should understand that AI is useful beyond greenfield projects; it can help reason through existing code.",
   },
@@ -274,7 +274,7 @@ const scriptBeats = [
     title: "An agent is the model plus the harness",
     spectrum: "Harness design",
     narration:
-      "The transcript emphasizes that the model alone is not the whole agent. The harness supplies sandboxes, orchestration, observability, logs, execution traces, cost metering, and controls that prevent drift.",
+      "The model alone is not the whole agent. The harness supplies sandboxes, orchestration, observability, logs, execution traces, cost metering, and controls that prevent drift.",
     takeaway:
       "When an agent fails, students should inspect the harness and context before simply blaming the model.",
   },
@@ -310,7 +310,7 @@ const scriptBeats = [
     title: "Route models intelligently",
     spectrum: "Model routing",
     narration:
-      "The transcript describes routing complex reasoning to stronger models and simple tasks to cheaper, faster models. The harness becomes a traffic cop that protects quality while reducing cost.",
+      "A mature harness can route complex reasoning to stronger models and simple tasks to cheaper, faster models. The harness becomes a traffic cop that protects quality while reducing cost.",
     takeaway:
       "Not every task needs the most expensive model. Mature systems match model power to task difficulty.",
   },
@@ -319,7 +319,7 @@ const scriptBeats = [
     title: "The mentorship gap becomes the big question",
     spectrum: "Junior developer growth",
     narration:
-      "The transcript ends with a challenge: if AI lays many of the bricks, how do junior developers learn architectural judgment? The answer starts with guided practice, examples, verification habits, and reflection.",
+      "The journey ends with a challenge: if AI lays many of the bricks, how do junior developers learn architectural judgment? The answer starts with guided practice, examples, verification habits, and reflection.",
     takeaway:
       "This app exists to help students practice the judgment that future engineers will need most.",
   },
@@ -557,7 +557,7 @@ const stageWorkshops = [
       "Use a small model to summarize passing tests, a stronger model to analyze flaky failures, and CI gates to block unsafe changes.",
     example:
       "The harness routes simple summaries cheaply, sends hard debugging to a stronger model, and stores the evidence in the pull request.",
-    challenge: "Which transcript concept does this demonstrate?",
+    challenge: "Which engineering concept does this demonstrate?",
     choices: [
       {
         text: "Intelligent model routing inside a mature harness.",
@@ -659,8 +659,8 @@ function quizMarkup() {
     .join("");
 }
 
-function scriptBeatButtons() {
-  return scriptBeats
+function journeyStepButtons() {
+  return journeySteps
     .map(
       (beat, index) => `
         <button class="beat-button" type="button" data-beat="${index}">
@@ -705,7 +705,7 @@ app.innerHTML = `
       <span>AgenticU</span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <a href="#journey">Script</a>
+      <a href="#journey">Journey</a>
       <a href="#spectrum">Spectrum</a>
       <a href="#workshop">Examples</a>
       <a href="#curriculum">Lessons</a>
@@ -743,8 +743,8 @@ app.innerHTML = `
 
     <section class="section-shell journey" id="journey">
       <div class="section-heading">
-        <p class="eyebrow">Script navigator</p>
-        <h2>Move through the transcript as a learning path.</h2>
+        <p class="eyebrow">Guided journey</p>
+        <h2>Follow the AI engineering learning path.</h2>
         <p>
           Students can follow the full story step by step: why AI coding matters,
           how vibe coding works, why verification changes the game, how context and
@@ -752,8 +752,8 @@ app.innerHTML = `
         </p>
       </div>
       <div class="journey-layout">
-        <div class="beat-list" aria-label="Transcript learning beats">
-          ${scriptBeatButtons()}
+        <div class="beat-list" aria-label="Guided learning steps">
+          ${journeyStepButtons()}
         </div>
         <article class="beat-detail" aria-live="polite">
           <div class="beat-detail__topline">
@@ -886,7 +886,7 @@ app.innerHTML = `
         <p class="eyebrow">Learning path</p>
         <h2>Four bite-sized modules for modern software judgment.</h2>
         <p>
-          Each module uses transcript analogies students can remember: bricklayers,
+          Each module uses memorable analogies students can remember: bricklayers,
           Michelin kitchens, hiking backpacks, and factory catwalks.
         </p>
       </div>
@@ -925,7 +925,7 @@ app.innerHTML = `
         <p class="eyebrow">Factory model</p>
         <h2>The developer designs the system that produces code.</h2>
         <p>
-          The transcript frames AI as the robotic arms on the factory floor. Your
+          The factory model frames AI as the robotic arms on the factory floor. Your
           job becomes routing raw materials, setting quality sensors, and deciding
           where human judgment must stay in the loop.
         </p>
@@ -1052,8 +1052,8 @@ let activeWorkshopIndex = 0;
 const completedWorkshops = new Set();
 
 function setBeat(index) {
-  activeBeatIndex = Math.max(0, Math.min(scriptBeats.length - 1, index));
-  const beat = scriptBeats[activeBeatIndex];
+  activeBeatIndex = Math.max(0, Math.min(journeySteps.length - 1, index));
+  const beat = journeySteps[activeBeatIndex];
 
   beatChapter.textContent = beat.chapter;
   beatSpectrum.textContent = beat.spectrum;
@@ -1066,7 +1066,7 @@ function setBeat(index) {
   });
 
   previousBeat.disabled = activeBeatIndex === 0;
-  nextBeat.disabled = activeBeatIndex === scriptBeats.length - 1;
+  nextBeat.disabled = activeBeatIndex === journeySteps.length - 1;
 }
 
 function updateWorkshopProgress() {

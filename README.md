@@ -14,7 +14,7 @@ An interactive educational app for undergraduate students learning how AI-assist
 
 The app is self-guided. Instructors do not need to provide prompts, files, or examples.
 
-- **Script navigator** turns the source transcript into 20 clickable learning steps without timestamp labels.
+- **Guided journey** turns the core material into 20 clickable learning steps without timestamp labels.
 - **Spectrum explorer** lets students compare vibe coding, guided AI development, and agentic engineering.
 - **Example workshop** gives students nine scenarios with AI moves, student-visible examples, feedback challenges, and progress tracking.
 - **Practice studio** helps students rewrite a vague prompt into a specification, verification plan, and guardrails.
